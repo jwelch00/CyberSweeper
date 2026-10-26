@@ -1,5 +1,5 @@
 {
-  "_about": "Rival scores on the local leaderboard. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. Approved 2026-10-26. bio / taunt / beaten (and NULL//SAINT's bio_after_beaten) are shown on the Rivals and game-over screens (SPEC.md, Rival flavor text).",
+  "_about": "Rival scores on the local leaderboard. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. Approved 2026-10-26; NULL//SAINT recalibrated the same day to 7,000 (975 ms think time) so the expert profile, a strong human, beats her in about 19% of runs. bio / taunt / beaten (and NULL//SAINT's bio_after_beaten) are shown on the Rivals and game-over screens (SPEC.md, Rival flavor text).",
   "rivals": [
     {
       "id": "rookie",
@@ -23,7 +23,7 @@
       "id": "netrunner",
       "name": "NULL//SAINT",
       "label": "netrunner",
-      "score": 7640,
+      "score": 7000,
       "bio": "Has never guessed. Has never hurried. Has never lost to you.",
       "bio_after_beaten": "Has never guessed. Has never hurried. Had never lost to you.",
       "taunt": "She saw that mine three moves before you did.",

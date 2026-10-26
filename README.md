@@ -177,7 +177,7 @@ Four headless bots play the real game through the same `GameState` API the UI wi
 | mx_halcyon | adds subset rules, chords | medium, low error rate | Runner rival |
 | NULL//SAINT | full solver, chords | never faster than 0.5 s a move, rare errors | Netrunner rival |
 | reference | like Runner but slower and sloppier | | stands in for a decent human; sets the run-length target |
-| expert | full solver, quicker than reference, fewer misclicks | | stands in for a strong human; checks NULL//SAINT is beatable (5.3% of its runs beat 7,640) |
+| expert | full solver, quicker than reference, fewer misclicks | | stands in for a strong human; sets how beatable NULL//SAINT is (19% of its runs beat 7,000) |
 
 Run them:
 
@@ -192,13 +192,13 @@ python tools/simulate.py --games 300 --sensitivity --report docs/tuning-report.m
 - Every profile plays the same seeded boards, and a run is reproducible from its seed.
 - The last command regenerates the report.
 
-**Current rival scores** (each bot's median run, approved 2026-10-26; details in `docs/tuning-report.md`):
+**Current rival scores** (each bot's median run, approved 2026-10-26; details in `docs/tuning-report.md`). NULL//SAINT is the final boss: a decent player never beats her, and a strong one does about one run in five.
 
 | Rival | Score |
 | --- | --- |
 | script.kitty | 1,890 |
 | mx_halcyon | 3,590 |
-| NULL//SAINT | 7,640 |
+| NULL//SAINT | 7,000 |
 
 A reference ("decent human") run lasts a median 9.5 minutes, 6.6–11.3 for most runs, and scores a median 2,960.
 

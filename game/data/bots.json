@@ -42,7 +42,7 @@
     "name": "NULL//SAINT",
     "label": "netrunner",
     "tier": 3,
-    "think_median_ms": 900,
+    "think_median_ms": 975,
     "think_sigma": 0.3,
     "think_min_ms": 500,
     "tier_extra_ms": [0, 0, 300, 700],

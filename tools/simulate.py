@@ -31,7 +31,7 @@ import run_tests as rt  # noqa: E402  (shared Godot discovery and launching)
 ROOT = rt.ROOT
 OUT = rt.OUT / "sim"
 TUNING_SECTIONS = {"links", "signal", "density", "start", "solver", "generator"}
-PROFILES = ["rookie", "runner", "netrunner", "reference"]   # expert is opt-in: --profiles ...,expert
+PROFILES = ["rookie", "runner", "netrunner", "reference", "expert"]
 
 
 # --- running ------------------------------------------------------------------
@@ -144,6 +144,12 @@ def print_table(summary: dict[str, dict]) -> None:
               f"{s['guesses_per_run']:>7.1f}{s['tiles_per_min']:>10.0f}")
 
 
+def approved_rivals() -> dict[str, dict]:
+    """Rival scores approved in game/data/rivals.json, by bot id."""
+    d = json.loads((ROOT / "game" / "data" / "rivals.json").read_text())
+    return {r["id"]: r for r in d["rivals"]}
+
+
 def targets(runs: dict[str, list[dict]], summary: dict[str, dict]) -> list[tuple[str, str, bool]]:
     """(target, measured, met) for the plan's tuning targets."""
     out = []
@@ -170,6 +176,11 @@ def targets(runs: dict[str, list[dict]], summary: dict[str, dict]) -> list[tuple
         pace = [summary[p]["tiles_per_min"] for p in ("rookie", "runner", "netrunner")]
         out.append(("pace: rookie < runner < netrunner (tiles/min)", " < ".join(f"{v:.0f}" for v in pace),
                     pace[0] < pace[1] < pace[2]))
+    if "expert" in summary:
+        saint = approved_rivals()["netrunner"]["score"]
+        q = 1 - rank_in([r["score"] for r in runs["expert"]], saint + 0.5)
+        out.append((f"expert beats NULL//SAINT's {saint:,} in about 20% of runs", f"{q * 100:.1f}%",
+                    0.15 <= q <= 0.25))
     longest = max(s["minutes"]["max"] for s in summary.values())
     out.append(("every run ends within 45 min", f"longest {longest:.1f} min", longest <= 45))
     return out
@@ -288,31 +299,36 @@ def write_report(path: Path, result: dict, summary: dict, sensitivity: list[dict
         for row in sensitivity:
             L.append(f"| {row['label']} | {row['minutes']:.1f} | {row['score']:,.0f} |")
     L.append("")
-    L.append("## Proposed rival scores")
+    L.append("## Rival scores")
     L.append("")
-    L.append("Each rival's score is its bot's median run, rounded to 10. The last column is how often a "
-             "reference (decent human) run beats it. NULL//SAINT is meant to be out of a decent player's reach: "
-             "beating it takes play close to its own, full logic at under a second a move, which is the "
-             "stretch goal a strong player works toward.")
+    L.append("Each rival's score is its bot's median run, rounded to 10, approved in `game/data/rivals.json`. "
+             "NULL//SAINT was recalibrated (975 ms think time) so the expert, a strong human, beats her in "
+             "about one run in five; a decent player never does. Small differences between a median here and "
+             "the approved score are run-to-run noise.")
     L.append("")
-    L.append("| Rival | Bot | Proposed score | Beaten by a reference run |")
-    L.append("| --- | --- | --- | --- |")
+    L.append("| Rival | Bot | Median this run | Approved score | Reference beats it | Expert beats it |")
+    L.append("| --- | --- | --- | --- | --- | --- |")
+    approved = approved_rivals()
     ref_scores = [r["score"] for r in ref_runs]
+    exp_scores = [r["score"] for r in runs.get("expert", [])]
     for p, label in (("rookie", "ROOKIE"), ("runner", "RUNNER"), ("netrunner", "NETRUNNER")):
-        if p in summary:
-            v = round_score(summary[p]["score"]["median"])
-            beat = (1 - rank_in(ref_scores, v + 0.5)) * 100 if ref_scores else float("nan")
-            L.append(f"| {meta[p]['bot']['name']} | {label} | **{v:,}** | {beat:.0f}% of runs |")
+        if p not in summary:
+            continue
+        v = int(approved[p]["score"])
+        beat_ref = f"{(1 - rank_in(ref_scores, v + 0.5)) * 100:.0f}% of runs" if ref_scores else "n/a"
+        beat_exp = f"{(1 - rank_in(exp_scores, v + 0.5)) * 100:.0f}% of runs" if exp_scores else "n/a"
+        L.append(f"| {meta[p]['bot']['name']} | {label} | {summary[p]['score']['median']:,.0f} | **{v:,}** | "
+                 f"{beat_ref} | {beat_exp} |")
     if "reference" in summary:
         ref = summary["reference"]
         L.append("")
-        L.append("## Proposed unlock thresholds")
+        L.append("## Unlock thresholds")
         L.append("")
         tiles_goal = int(round(ref["tiles"]["median"] * 10 / 1000.0)) * 1000
         depth_goal = int(round(ref["depth"]["p90"] / 10.0)) * 10
-        L.append(f"- **Root access:** decrypt {tiles_goal:,} tiles across all runs (about ten typical runs; "
+        L.append(f"- **Root access:** decrypt {tiles_goal:,} tiles across all runs (approved; about ten typical runs; "
                  f"reference median is {ref['tiles']['median']:,.0f} tiles per run).")
-        L.append(f"- **Rustbelt:** reach depth {depth_goal} in one run (a reference run gets there about "
+        L.append(f"- **Rustbelt:** reach depth {depth_goal} in one run (approved; a reference run gets there about "
                  f"{(1 - rank_in([r['depth'] for r in ref_runs], depth_goal)) * 100:.0f}% of the time; "
                  f"median depth {ref['depth']['median']:.0f}).")
         L.append("- **Hotwire** and **Icebreaker** stay tied to beating mx_halcyon and NULL//SAINT.")
