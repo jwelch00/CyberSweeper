@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CyberSweeper — palettes</title>
+<link rel="stylesheet" href="../shared/cs.css">
+<style>
+  .screen { background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--tile) 70%, var(--void)) 0%, var(--void) 70%); }
+  header { position: absolute; left: 120px; top: 84px; right: 120px; display: flex; justify-content: space-between; align-items: end; z-index: 20; }
+  header h1 { font-size: 56px; font-weight: 700; }
+  header p { margin-top: 8px; font-size: 20px; color: var(--ink-dim); }
+  header .back { font-size: 18px; color: var(--ink-dim); display: flex; gap: 10px; align-items: center; }
+  .row { position: absolute; z-index: 20; left: 120px; right: 120px; top: 250px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; }
+  .card { position: relative; padding: 22px 22px 26px; height: 690px; background: var(--void); color: var(--ink); --cut: 14px;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    box-shadow: inset 0 0 0 1px var(--tile-edge); }
+  .card.focus { box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 0 transparent; }
+  .card.focus::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 40px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .prev { position: relative; height: 290px; overflow: hidden; --cell: 38px; background: var(--void); }
+  .prev .board-viewport { inset: 0; }
+  .lockbadge { position: absolute; inset: 0; display: grid; place-items: center; z-index: 3; }
+  .lockbadge svg { width: 54px; height: 54px; color: var(--ink-dim); }
+  .name { margin-top: 22px; font-size: 30px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .tagnew { font-size: 13px; font-weight: 600; color: var(--void); background: var(--accent2); padding: 3px 9px; clip-path: polygon(5px 0, 100% 0, 100% 100%, 0 100%, 0 5px); }
+  .vibe { margin-top: 6px; font-size: 16px; line-height: 1.4; color: var(--ink-dim); min-height: 46px; }
+  .sw { margin-top: 18px; display: flex; height: 22px; }
+  .sw i { flex: 1; }
+  .sw.locked i:nth-child(n+3) { background: repeating-linear-gradient(135deg, var(--tile) 0 4px, var(--void) 4px 8px) !important; }
+  .status { position: absolute; left: 22px; right: 22px; bottom: 24px; }
+  .status .btn { width: 100%; justify-content: center; height: 52px; font-size: 18px; }
+  .equipped { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; font-size: 18px; font-weight: 600; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .got { font-size: 15px; color: var(--ink-dim); margin-bottom: 14px; }
+  .cond { font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+  .prog { margin-top: 12px; display: flex; justify-content: space-between; font-family: var(--f-data); font-size: 13px; color: var(--ink-dim); }
+  .pbar { margin-top: 8px; height: 6px; background: var(--tile); }
+  .pbar i { display: block; height: 100%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .hint { position: absolute; z-index: 20; left: 120px; bottom: 56px; display: flex; gap: 34px; color: var(--ink-dim); font-size: 16px; }
+  .hint span { display: inline-flex; gap: 8px; align-items: center; }
+</style>
+</head>
+<body>
+<div class="screen fx-scanlines">
+  <header>
+    <div><h1>Palettes</h1><p>2 of 5 unlocked. A palette recolors the board, the HUD and every menu.</p></div>
+    <div class="back"><span class="kbd">Esc</span> Back to menu</div>
+  </header>
+  <div class="row" id="row"></div>
+  <div class="hint"><span><span class="kbd">←</span><span class="kbd">→</span> choose</span><span><span class="kbd">Enter</span> equip</span></div>
+</div>
+<script src="../shared/board.js"></script>
+<script>
+  CS.applyPalette(); CS.injectGlyphs();
+  const cards = [
+    { id: "signal", name: "Signal", vibe: "The house look. Cyan and magenta on blue-black.", state: "equipped", got: "Default palette" },
+    { id: "hotwire", name: "Hotwire", vibe: "Hot pink lead, cyan support, plum shadows.", state: "new", got: "Unlocked by beating mx_halcyon" },
+    { id: "root-access", name: "Root access", vibe: "Phosphor terminal greens that heat up as numbers climb.", state: "locked", cond: "Decrypt 10,000 tiles across all runs", have: 7812, need: 10000 },
+    { id: "rustbelt", name: "Rustbelt", vibe: "Sodium streetlight amber and oxidized teal.", state: "locked", cond: "Reach depth 300 in a single run", have: 212, need: 300, unit: "best depth " },
+    { id: "icebreaker", name: "Icebreaker", vibe: "Chrome, gunmetal and frost. The trophy.", state: "locked", cond: "Beat NULL//SAINT’s 5,960", have: 2293, need: 5960, unit: "best run " },
+  ];
+  const lock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 10V7a5 5 0 0 1 10 0v3"/><path d="M5 10h14v11H5z"/><path d="M12 14v3"/></svg>`;
+  const row = document.getElementById("row");
+  const st = CS.makeBoard({ W: 30, H: 30, seed: 1207, density: 0.2, start: [12, 13], blobs: [{ x: 12, y: 13, r: 6 }], noise: 0.5, flagRate: 1, frontierFlagRate: 0.5, hits: [[17, 12]] });
+  const hidden = { ...st, rev: new Uint8Array(st.W * st.H), flag: new Uint8Array(st.W * st.H), hit: new Uint8Array(st.W * st.H) };
+  for (const c of cards) {
+    const el = document.createElement("div");
+    el.className = "card" + (c.state === "new" ? " focus" : "");
+    el.setAttribute("data-palette", c.id);
+    const locked = c.state === "locked";
+    const status = c.state === "equipped" ? `<div class="got">${c.got}</div><div class="equipped">Equipped</div>`
+      : c.state === "new" ? `<div class="got">${c.got}</div><a class="btn">Equip ${c.name}</a>`
+      : `<div class="cond">${c.cond}</div><div class="prog"><span>${c.unit || ""}${CS.fmt(c.have)}</span><span>${CS.fmt(c.need)}</span></div><div class="pbar"><i style="width:${(c.have / c.need * 100).toFixed(1)}%"></i></div>`;
+    el.innerHTML = `
+      <div class="prev"><div class="board-viewport"></div>${locked ? `<div class="lockbadge">${lock}</div>` : ""}</div>
+      <div class="name">${c.name}${c.state === "new" ? `<span class="tagnew">New</span>` : ""}</div>
+      <div class="vibe">${c.vibe}</div>
+      <div class="sw${locked ? " locked" : ""}">${["--tile", "--accent", "--accent2", "--warn", "--danger", "--n1", "--n2", "--n3", "--n4", "--ink"].map((v) => `<i style="background:var(${v})"></i>`).join("")}</div>
+      <div class="status">${status}</div>`;
+    row.appendChild(el);
+    CS.render(el.querySelector(".board-viewport"), locked ? hidden : st, { x0: 11, y0: 8, cols: 8, rows: 8, px: -6, py: -4 }, {});
+  }
+</script>
+</body>
+</html>

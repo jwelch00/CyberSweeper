@@ -1,0 +1,14 @@
+# Godot editor/import cache (asset .import files next to assets are committed)
+game/.godot/
+
+# Local tools (portable Godot binary) and test output
+.tools/
+test-output/
+
+# Builds (milestone 5)
+build/
+dist/
+
+# Python
+__pycache__/
+*.pyc

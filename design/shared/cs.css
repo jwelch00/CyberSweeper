@@ -1,0 +1,149 @@
+/* CyberSweeper mockup styles. Palette colors come from ../tokens/palettes.css */
+@import url("../tokens/palettes.css");
+
+@font-face { font-family: "Chakra Petch"; font-weight: 400; src: url("../fonts/ChakraPetch-400.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 500; src: url("../fonts/ChakraPetch-500.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 600; src: url("../fonts/ChakraPetch-600.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 700; src: url("../fonts/ChakraPetch-700.woff2") format("woff2"); }
+@font-face { font-family: "Martian Mono"; font-weight: 300; src: url("../fonts/MartianMono-300.woff2") format("woff2"); }
+@font-face { font-family: "Martian Mono"; font-weight: 400; src: url("../fonts/MartianMono-400.woff2") format("woff2"); }
+@font-face { font-family: "Martian Mono"; font-weight: 600; src: url("../fonts/MartianMono-600.woff2") format("woff2"); }
+@font-face { font-family: "Martian Mono"; font-weight: 800; src: url("../fonts/MartianMono-800.woff2") format("woff2"); }
+
+:root {
+  --f-ui: "Chakra Petch", system-ui, sans-serif;
+  --f-data: "Martian Mono", ui-monospace, monospace;
+  --cell: 40px;
+  --gap: 3px;
+  --cut: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--void); color: var(--ink); font-family: var(--f-ui); }
+body { -webkit-font-smoothing: antialiased; }
+
+/* ---------- screen frame (fixed 1920x1080 artboard) ---------- */
+.screen {
+  position: relative; width: 1920px; height: 1080px; overflow: hidden;
+  background: var(--void);
+}
+.fx-scanlines::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 50;
+  background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ink) 3.5%, transparent) 0 1px, transparent 1px 3px);
+}
+.fx-vignette::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse 75% 75% at 50% 50%, transparent 55%, color-mix(in srgb, var(--void) 85%, transparent) 100%);
+}
+
+/* ---------- board ---------- */
+.board-viewport { position: absolute; inset: 0; overflow: hidden; }
+.board {
+  position: absolute; display: grid; gap: var(--gap);
+  grid-auto-rows: var(--cell); grid-auto-columns: var(--cell);
+}
+.c {
+  position: relative; width: var(--cell); height: var(--cell);
+  display: grid; place-items: center;
+  font-family: var(--f-data); font-weight: 800; font-size: calc(var(--cell) * .52); line-height: 1;
+}
+/* hidden = encrypted chip */
+.c.h {
+  background: var(--tile);
+  clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%, 0 16%);
+  box-shadow: inset 1px 1px 0 var(--tile-edge);
+}
+.c.h::before {
+  content: attr(data-b); position: absolute; right: 12%; bottom: 10%;
+  font-family: var(--f-data); font-weight: 400; font-size: calc(var(--cell) * .22); letter-spacing: .02em;
+  color: var(--cipher); opacity: var(--co, 1);
+}
+.c.h.hover { background: color-mix(in srgb, var(--tile) 70%, var(--accent) 30%); box-shadow: inset 0 0 0 1px var(--accent); }
+.c.h.hover::before { color: var(--void); }
+.c.h.chord { background: color-mix(in srgb, var(--tile) 82%, var(--accent) 18%); }
+/* revealed = decrypted floor */
+.c.r { background: var(--floor); box-shadow: 0 0 0 2px var(--floor), inset 0 0 0 1px color-mix(in srgb, var(--grid) 70%, transparent); }
+.c.r[data-n] { color: var(--nc); text-shadow: 0 0 6px color-mix(in srgb, var(--nc) 70%, transparent), 0 0 18px color-mix(in srgb, var(--nc) 35%, transparent); }
+.c[data-n="1"] { --nc: var(--n1); } .c[data-n="2"] { --nc: var(--n2); }
+.c[data-n="3"] { --nc: var(--n3); } .c[data-n="4"] { --nc: var(--n4); }
+.c[data-n="5"] { --nc: var(--n5); } .c[data-n="6"] { --nc: var(--n6); }
+.c[data-n="7"] { --nc: var(--n7); } .c[data-n="8"] { --nc: var(--n8); }
+.c.r.fresh { background: color-mix(in srgb, var(--floor) 80%, var(--accent) 20%); }
+.c.r.fresh2 { background: color-mix(in srgb, var(--floor) 90%, var(--accent) 10%); }
+/* flag = marker */
+.c.f svg { width: 50%; height: 50%; color: color-mix(in srgb, var(--warn) 82%, var(--tile)); }
+.c.f::before { display: none; }
+/* mine states */
+.c.m svg { width: 70%; height: 70%; }
+.c.m.hit {
+  background: color-mix(in srgb, var(--danger) 30%, var(--floor)); box-shadow: 0 0 0 1px var(--danger), 0 0 22px color-mix(in srgb, var(--danger) 60%, transparent);
+  color: var(--danger);
+}
+.c.m.hit svg { filter: drop-shadow(-2px 0 0 var(--accent2)) drop-shadow(2px 0 0 var(--accent)) drop-shadow(0 0 6px var(--danger)); }
+.c.m.shown { background: var(--floor); color: var(--ink-dim); box-shadow: 0 0 0 2px var(--floor), inset 0 0 0 1px var(--grid); }
+.c.f.wrong { background: var(--floor); clip-path: none; box-shadow: 0 0 0 2px var(--floor), inset 0 0 0 1px var(--grid); }
+.c.f.wrong svg { color: var(--ink-dim); filter: none; }
+.c.f.wrong::after { content: ""; position: absolute; inset: 22%; background: linear-gradient(45deg, transparent 46%, var(--danger) 46% 54%, transparent 54%), linear-gradient(-45deg, transparent 46%, var(--danger) 46% 54%, transparent 54%); }
+.c.safe-forced { box-shadow: inset 0 0 0 1px var(--accent2); }
+
+/* score popup */
+.pop {
+  position: absolute; z-index: 8; font-family: var(--f-data); font-weight: 800; font-size: 20px;
+  color: var(--pc); text-shadow: 0 0 10px color-mix(in srgb, var(--pc) 70%, transparent);
+  pointer-events: none; padding: 2px 7px 3px;
+  background: color-mix(in srgb, var(--void) 88%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc) 60%, transparent);
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
+}
+
+/* ---------- HUD ---------- */
+.panel {
+  position: absolute; z-index: 20;
+  background: color-mix(in srgb, var(--void) 78%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in srgb, var(--tile-edge) 100%, transparent);
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+}
+/* chamfered border trick: corner ticks in accent */
+.panel::before, .panel::after {
+  content: ""; position: absolute; width: var(--cut); height: var(--cut);
+  background: linear-gradient(to bottom right, transparent calc(50% - 1px), var(--accent) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px));
+}
+.panel::before { top: 0; left: 0; }
+.panel::after { right: 0; bottom: 0; }
+
+.lbl { font-family: var(--f-ui); font-weight: 500; font-size: 14px; color: var(--ink-dim); letter-spacing: .02em; }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
+
+.wordmark {
+  font-family: var(--f-ui); font-weight: 700; letter-spacing: .04em; color: var(--ink);
+  text-shadow: -2px 0 0 color-mix(in srgb, var(--accent2) 85%, transparent), 2px 0 0 color-mix(in srgb, var(--accent) 85%, transparent);
+}
+
+/* links (lives) */
+.links { display: flex; gap: 10px; align-items: center; }
+.link { width: 26px; height: 26px; transform: rotate(45deg); border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 35%, transparent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent); }
+.link.lost { border-color: var(--danger); background: none; box-shadow: none; opacity: .8; position: relative; }
+.link.lost::after { content: ""; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; background: var(--danger); transform: rotate(-45deg) translateX(-50%); }
+
+/* signal meter */
+.meter { display: flex; gap: 3px; height: 18px; }
+.meter i { flex: 1; background: color-mix(in srgb, var(--accent) 14%, transparent); clip-path: polygon(30% 0, 100% 0, 70% 100%, 0 100%); }
+.meter i.on { background: var(--mc, var(--accent)); box-shadow: 0 0 8px var(--mc, var(--accent)); }
+.meter.low { --mc: var(--warn); } .meter.crit { --mc: var(--danger); }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 14px; height: 56px; padding: 0 28px;
+  font-family: var(--f-ui); font-weight: 600; font-size: 20px; letter-spacing: .02em; text-decoration: none;
+  color: var(--void); background: var(--accent);
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.btn.ghost { color: var(--ink); background: color-mix(in srgb, var(--tile) 90%, transparent); box-shadow: inset 0 0 0 1px var(--tile-edge); }
+.kbd { font-family: var(--f-data); font-weight: 600; font-size: 12px; padding: 3px 7px; border: 1px solid currentColor; border-radius: 3px; opacity: .75; }
+
+/* minimap */
+.minimap canvas { display: block; }
+
+/* glyph sprite holder */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }

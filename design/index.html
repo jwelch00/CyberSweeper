@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CyberSweeper design</title>
+<link rel="icon" href="icon/png/icon-32.png">
+<link rel="stylesheet" href="shared/cs.css">
+<style>
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 60px 40px 100px; }
+  .head { display: flex; gap: 22px; align-items: center; }
+  .head img { width: 72px; height: 72px; }
+  h1 { font-size: 48px; }
+  .intro { margin-top: 16px; font-size: 19px; line-height: 1.5; color: var(--ink-dim); max-width: 68ch; }
+  .pal { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .pal span { font-size: 16px; color: var(--ink-dim); margin-right: 6px; }
+  .pal button { font: 600 16px var(--f-ui); color: var(--ink); background: var(--tile); border: 0; height: 40px; padding: 0 16px; cursor: pointer; box-shadow: inset 0 0 0 1px var(--tile-edge); }
+  .pal button[aria-pressed="true"] { color: var(--void); background: var(--accent); }
+  .pal button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .grid { margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 28px; }
+  .card { display: block; text-decoration: none; color: var(--ink); box-shadow: inset 0 0 0 1px var(--tile-edge); padding: 12px 12px 18px; }
+  .card:hover, .card:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); outline: none; }
+  .card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; object-position: top; background: var(--void); }
+  .card h2 { margin-top: 14px; font-size: 22px; }
+  .card p { margin-top: 4px; font-size: 15px; color: var(--ink-dim); line-height: 1.45; }
+  @media (max-width: 600px) { .wrap { padding: 32px 16px 60px; } h1 { font-size: 34px; } .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head"><img src="icon/icon.svg" alt=""><h1 class="wordmark">CYBERSWEEPER design</h1></div>
+  <p class="intro">Mockups for every screen, built with the real fonts and palette tokens. Open a screen to see it at full size; the palette buttons below re-skin whichever screen you open next. PNG copies of each screen are in the png folder.</p>
+  <div class="pal" id="pal"><span>Open screens in</span></div>
+  <div class="grid" id="grid"></div>
+</div>
+<script>
+  const screens = [
+    ["title", "Title", "Menu over a half-decrypted field.", "title-signal.png"],
+    ["gameplay", "Gameplay", "The board, HUD, signal meter, minimap and a mine hit.", "gameplay-signal.png"],
+    ["game-over", "Game over", "Score tally by number, rival ladder, palette unlock.", "game-over-signal.png"],
+    ["palettes", "Palettes", "Five palettes, two unlocked, locked ones show progress.", "palettes.png"],
+    ["components", "Components", "Cell states, numbers in every palette, HUD pieces, type, motion.", "components.png"],
+    ["icon", "Icon", "Three concepts and the size ladder for the pick.", "icon.png"],
+    ["download-page", "Download page", "The page your server hosts. Detects the visitor's OS.", "download-page.png"],
+  ];
+  const pals = [["signal", "Signal"], ["hotwire", "Hotwire"], ["root-access", "Root access"], ["rustbelt", "Rustbelt"], ["icebreaker", "Icebreaker"]];
+  let cur = "signal";
+  try { cur = localStorage.getItem("cs-pal") || "signal"; } catch (e) {}
+  const pal = document.getElementById("pal"), grid = document.getElementById("grid");
+  function draw() {
+    document.documentElement.setAttribute("data-palette", cur);
+    pal.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.id === cur));
+    grid.innerHTML = screens.map(([f, n, d, png]) => {
+      const img = f === "gameplay" ? `gameplay-${cur}.png` : png;
+      return `<a class="card" href="mockups/${f}.html?palette=${cur}"><img src="png/${img}" alt="${n} mockup"><h2>${n}</h2><p>${d}</p></a>`;
+    }).join("");
+  }
+  pal.insertAdjacentHTML("beforeend", pals.map(([id, n]) => `<button data-id="${id}">${n}</button>`).join(""));
+  pal.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; cur = b.dataset.id; try { localStorage.setItem("cs-pal", cur); } catch (e) {} draw(); });
+  draw();
+</script>
+</body>
+</html>

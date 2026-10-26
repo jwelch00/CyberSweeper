@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CyberSweeper — game over</title>
+<link rel="stylesheet" href="../shared/cs.css">
+<style>
+  #vp { filter: saturate(.35) brightness(.55); }
+  .dim { position: absolute; inset: 0; z-index: 6; background: color-mix(in srgb, var(--void) 55%, transparent); }
+  .main { left: 120px; top: 96px; width: 1000px; height: 888px; padding: 56px 64px; }
+  h1 { font-size: 44px; font-weight: 700; color: var(--danger); letter-spacing: .01em; text-shadow: -2px 0 0 color-mix(in srgb, var(--accent2) 70%, transparent), 2px 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
+  .sub { margin-top: 8px; font-size: 20px; color: var(--ink-dim); }
+  .score { margin-top: 34px; display: flex; align-items: baseline; gap: 28px; }
+  .score .big { font-family: var(--f-data); font-weight: 800; font-size: 132px; line-height: 1; color: var(--ink); text-shadow: 0 0 30px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .score .best { font-size: 20px; font-weight: 600; color: var(--accent2); }
+  .score .best span { display: block; font-weight: 400; color: var(--ink-dim); font-size: 16px; }
+  h2 { font-size: 20px; font-weight: 600; color: var(--ink); margin-top: 46px; }
+  h2 span { font-weight: 400; color: var(--ink-dim); }
+  .tally { margin-top: 18px; display: grid; grid-template-columns: repeat(8, 1fr) 1.3fr; gap: 10px; align-items: end; height: 250px; }
+  .col { display: grid; grid-template-rows: auto 1fr auto auto; justify-items: center; height: 100%; gap: 8px; }
+  .col .n { font-family: var(--f-data); font-weight: 800; font-size: 30px; color: var(--nc); text-shadow: 0 0 10px color-mix(in srgb, var(--nc) 60%, transparent); }
+  .col .barwrap { width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+  .col .bar { width: 62%; background: color-mix(in srgb, var(--nc) 75%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--nc) 40%, transparent); min-height: 2px; clip-path: polygon(0 6px, 6px 0, 100% 0, 100% 100%, 0 100%); }
+  .col .cnt { font-family: var(--f-data); font-size: 13px; color: var(--ink-dim); }
+  .col .sub2 { font-family: var(--f-data); font-weight: 600; font-size: 16px; color: var(--ink); }
+  .eq { display: grid; justify-items: start; align-self: end; padding-left: 18px; border-left: 1px solid var(--tile-edge); gap: 6px; }
+  .eq .lbl { font-size: 14px; }
+  .eq .v { font-family: var(--f-data); font-weight: 800; font-size: 28px; color: var(--ink); }
+  .stats { margin-top: 40px; display: flex; gap: 56px; }
+  .stats div { display: grid; gap: 4px; }
+  .stats .v { font-family: var(--f-data); font-weight: 600; font-size: 22px; color: var(--ink); }
+  .actions { position: absolute; left: 64px; bottom: 56px; display: flex; gap: 16px; }
+
+  .side { right: 120px; top: 96px; width: 640px; padding: 44px 44px 40px; }
+  .side h2 { margin-top: 0; }
+  .ladder { margin-top: 20px; display: grid; gap: 4px; }
+  .rung { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; height: 58px; padding: 0 18px; gap: 14px; background: color-mix(in srgb, var(--tile) 70%, transparent); }
+  .rung .rk { font-family: var(--f-data); font-size: 14px; color: var(--ink-dim); }
+  .rung .who { font-size: 20px; font-weight: 600; color: var(--ink); }
+  .rung .who b { font-weight: inherit; }
+  .rung .who small { font-size: 14px; font-weight: 500; color: var(--ink-dim); margin-left: 10px; }
+  .rung .pts { font-family: var(--f-data); font-weight: 600; font-size: 20px; color: var(--ink); text-align: right; }
+  .rung .pts small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-dim); }
+  .rung.you { background: color-mix(in srgb, var(--accent) 16%, var(--tile)); box-shadow: inset 3px 0 0 var(--accent); }
+  .rung.you .who { color: var(--accent); }
+  .rung.beaten .who b, .rung.beaten .pts { color: var(--ink-dim); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--accent2) 80%, transparent); text-decoration-thickness: 2px; }
+  .rung.prev { opacity: .6; }
+
+  .unlock { right: 120px; top: 640px; width: 640px; padding: 30px 44px 34px; --cut: 14px; border-color: var(--accent2); box-shadow: 0 0 40px color-mix(in srgb, var(--accent2) 25%, transparent); }
+  .unlock .lbl { color: var(--accent2); font-size: 16px; }
+  .unlock .name { margin-top: 4px; font-size: 34px; font-weight: 700; color: var(--ink); }
+  .unlock .why { margin-top: 4px; font-size: 16px; color: var(--ink-dim); }
+  .swatch { margin-top: 18px; display: flex; height: 26px; }
+  .swatch i { flex: 1; }
+  .unlock .row { margin-top: 22px; display: flex; gap: 14px; }
+  .unlock .btn { height: 48px; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="screen fx-scanlines fx-vignette">
+  <div class="board-viewport" id="vp"></div>
+  <div class="dim"></div>
+
+  <section class="panel main">
+    <h1>Link severed</h1>
+    <p class="sub">All three links lost at depth 212, eleven minutes in.</p>
+    <div class="score">
+      <div class="big num">2,293</div>
+      <div class="best">New best<span>up from 1,734</span></div>
+    </div>
+    <h2>How your score adds up <span>every number you decrypted, summed</span></h2>
+    <div class="tally" id="tally"></div>
+    <div class="stats">
+      <div><span class="lbl">time survived</span><span class="v">11:42</span></div>
+      <div><span class="lbl">tiles decrypted</span><span class="v">1,866</span></div>
+      <div><span class="lbl">deepest point</span><span class="v">212</span></div>
+      <div><span class="lbl">flags correct</span><span class="v">96%</span></div>
+    </div>
+    <div class="actions">
+      <a class="btn">Run it back <span class="kbd">R</span></a>
+      <a class="btn ghost">Main menu <span class="kbd">Esc</span></a>
+    </div>
+  </section>
+
+  <section class="panel side">
+    <h2>Rivals <span>local leaderboard</span></h2>
+    <div class="ladder">
+      <div class="rung"><span class="rk">1</span><span class="who">NULL//SAINT<small>netrunner</small></span><span class="pts">5,960<small>3,667 to go</small></span></div>
+      <div class="rung you"><span class="rk">2</span><span class="who">You<small>this run</small></span><span class="pts">2,293</span></div>
+      <div class="rung beaten"><span class="rk">3</span><span class="who"><b>mx_halcyon</b><small>runner, beaten this run</small></span><span class="pts">2,180</span></div>
+      <div class="rung prev"><span class="rk">4</span><span class="who">You<small>previous best</small></span><span class="pts">1,734</span></div>
+      <div class="rung beaten"><span class="rk">5</span><span class="who"><b>script.kitty</b><small>rookie</small></span><span class="pts">640</span></div>
+    </div>
+  </section>
+
+  <section class="panel unlock">
+    <div class="lbl">Palette unlocked</div>
+    <div class="name">Hotwire</div>
+    <div class="why">You beat mx_halcyon. Hot pink lead, cyan support, plum shadows.</div>
+    <div class="swatch" id="sw"></div>
+    <div class="row"><a class="btn">Equip Hotwire</a><a class="btn ghost">Later</a></div>
+  </section>
+</div>
+<script src="../shared/board.js"></script>
+<script>
+  CS.applyPalette(); CS.injectGlyphs();
+  const st = CS.makeBoard({
+    W: 150, H: 100, seed: 731, density: 0.17, start: [40, 62],
+    blobs: [{ x: 40, y: 62, r: 12 }, { x: 56, y: 55, r: 13 }, { x: 72, y: 49, r: 12 }, { x: 86, y: 43, r: 11 }, { x: 95, y: 50, r: 8 }],
+    noise: 0.75, flagRate: 0.92, frontierFlagRate: 0.45, hits: [[97, 44], [80, 36], [99, 55]], wrongFlags: [[104, 47], [90, 33]], gameOver: true
+  });
+  CS.render(document.getElementById("vp"), st, { x0: 70, y0: 26, cols: 47, rows: 27, px: -18, py: -10 });
+  // tally: score = sum of numbers on decrypted tiles
+  const counts = [617, 395, 173, 60, 18, 5, 1, 0];
+  const subs = counts.map((c, i) => c * (i + 1));
+  const total = subs.reduce((a, b) => a + b, 0);
+  const max = Math.max(...subs);
+  document.getElementById("tally").innerHTML = counts.map((c, i) => `
+    <div class="col" style="--nc: var(--n${i + 1})">
+      <span class="n">${i + 1}</span>
+      <div class="barwrap"><div class="bar" style="height:${Math.max(1, subs[i] / max * 130)}px"></div></div>
+      <span class="cnt">×${CS.fmt(c)}</span>
+      <span class="sub2">${CS.fmt(subs[i])}</span>
+    </div>`).join("") + `<div class="eq"><span class="lbl">total</span><span class="v">${CS.fmt(total)}</span></div>`;
+  // swatch of the unlocked palette, read from its tokens
+  const probe = document.createElement("div"); probe.setAttribute("data-palette", "hotwire"); document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  document.getElementById("sw").innerHTML = ["--tile", "--accent", "--accent2", "--warn", "--danger", "--n1", "--n2", "--n3", "--n4", "--ink"].map((v) => `<i style="background:${cs.getPropertyValue(v)}"></i>`).join("");
+</script>
+</body>
+</html>

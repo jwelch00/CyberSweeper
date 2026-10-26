@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CyberSweeper — icon</title>
+<link rel="stylesheet" href="../shared/cs.css">
+<style>
+  .screen { padding: 84px 120px; }
+  h1 { font-size: 56px; font-weight: 700; }
+  .intro { margin-top: 10px; font-size: 20px; color: var(--ink-dim); max-width: 72ch; line-height: 1.45; }
+  .concepts { margin-top: 50px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+  .cc { padding: 28px; box-shadow: inset 0 0 0 1px var(--tile-edge); }
+  .cc.pick { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cc img { display: block; width: 300px; height: 300px; margin: 0 auto; }
+  .cc h2 { margin-top: 22px; font-size: 26px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .cc h2 small { font-size: 13px; font-weight: 600; color: var(--void); background: var(--accent); padding: 3px 9px; }
+  .cc p { margin-top: 8px; font-size: 17px; line-height: 1.45; color: var(--ink-dim); }
+  .ladders { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+  .ladder { padding: 26px 28px; display: flex; align-items: end; gap: 34px; }
+  .ladder.dark { background: #1E1E24; } .ladder.light { background: #EDEEF2; }
+  .ladder figure { display: grid; justify-items: center; gap: 8px; }
+  .ladder figcaption { font-family: var(--f-data); font-size: 12px; color: #8A8C99; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <h1>Icon</h1>
+  <p class="intro">Three directions on the same chamfered plate. Black ice is the pick: the mine says Minesweeper, the chromatic split says cyberpunk, and it still reads at 16px thanks to a simplified small variant (icon-small.svg) used for 32px and below.</p>
+  <div class="concepts">
+    <div class="cc pick"><img src="../icon/png/concept-a-black-ice-512.png" alt=""><h2>Black ice <small>Primary</small></h2><p>A mine on a field of encrypted chips, split cyan and magenta like a glitch.</p></div>
+    <div class="cc"><img src="../icon/png/concept-b-decrypted-3-512.png" alt=""><h2>Decrypted 3</h2><p>The score mechanic as a mark. Sharpest at tiny sizes, but less obviously a mine game.</p></div>
+    <div class="cc"><img src="../icon/png/concept-c-lock-on-512.png" alt=""><h2>Lock-on</h2><p>The in-game cursor brackets around a flag. Loud on a taskbar, quieter on meaning.</p></div>
+  </div>
+  <div class="ladders">
+    <div class="ladder dark" id="d"></div>
+    <div class="ladder light" id="l"></div>
+  </div>
+</div>
+<script>
+  const sizes = [16, 24, 32, 48, 64, 128, 256];
+  for (const id of ["d", "l"]) document.getElementById(id).innerHTML = sizes.map((s) => `<figure><img src="../icon/png/icon-${s}.png" width="${Math.min(s, 128)}" height="${Math.min(s, 128)}" alt=""><figcaption>${s}</figcaption></figure>`).join("");
+</script>
+</body>
+</html>

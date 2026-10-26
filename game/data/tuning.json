@@ -1,0 +1,36 @@
+{
+  "_about": "Every gameplay number. Placeholders until the milestone 2 bot runs tune them.",
+  "links": {
+    "start": 3
+  },
+  "signal": {
+    "max": 100.0,
+    "drain_per_sec": 2.0,
+    "drain_growth_per_min": 0.08,
+    "refill_per_cell": 1.5,
+    "refill_cap_per_move": 25.0,
+    "low_fraction": 0.30,
+    "critical_fraction": 0.10
+  },
+  "density": {
+    "base": 0.15,
+    "per_cell": 0.0005,
+    "max": 0.22
+  },
+  "start": {
+    "min_opening": 20
+  },
+  "solver": {
+    "window_radius": 2,
+    "node_cap": 100000
+  },
+  "generator": {
+    "proof_margin": 3,
+    "local_repair_radius": 2,
+    "local_repair_cells": 4,
+    "attempts_local": 8,
+    "attempts_chunk": 4,
+    "attempts_neighbour": 4,
+    "rescue_radii": [2, 3, 4, 6]
+  }
+}

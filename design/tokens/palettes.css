@@ -1,0 +1,116 @@
+/* GENERATED from palettes.json by gen_palettes.py, do not edit by hand */
+
+:root, [data-palette="signal"] {
+  --void: #06070F;
+  --floor: #080913;
+  --grid: #151A33;
+  --tile: #151A34;
+  --tile-edge: #232B55;
+  --cipher: #374173;
+  --ink: #DCE2FF;
+  --ink-dim: #6C76A6;
+  --accent: #19F0FF;
+  --accent2: #FF2BD1;
+  --warn: #F4FF4F;
+  --danger: #FF3B5C;
+  --n1: #33E4FF;
+  --n2: #5CFF9D;
+  --n3: #FF4FA8;
+  --n4: #B48CFF;
+  --n5: #FF9A3D;
+  --n6: #FFF04D;
+  --n7: #FF4D4D;
+  --n8: #FFFFFF;
+}
+
+[data-palette="hotwire"] {
+  --void: #0D0410;
+  --floor: #0F0512;
+  --grid: #2A0F33;
+  --tile: #270D31;
+  --tile-edge: #45195A;
+  --cipher: #5D2E70;
+  --ink: #FFE3F6;
+  --ink-dim: #A475A9;
+  --accent: #FF2BD6;
+  --accent2: #2BF6FF;
+  --warn: #FFE93B;
+  --danger: #FF3B3B;
+  --n1: #2BF6FF;
+  --n2: #FF6BE0;
+  --n3: #FFE93B;
+  --n4: #A495FF;
+  --n5: #FF8F5A;
+  --n6: #7CFFB2;
+  --n7: #FF4545;
+  --n8: #FFFFFF;
+}
+
+[data-palette="root-access"] {
+  --void: #010502;
+  --floor: #020703;
+  --grid: #0C2412;
+  --tile: #0B2213;
+  --tile-edge: #15462A;
+  --cipher: #266635;
+  --ink: #C8FFD4;
+  --ink-dim: #5A9A68;
+  --accent: #39FF6A;
+  --accent2: #C6FF3D;
+  --warn: #FFB627;
+  --danger: #FF4B2B;
+  --n1: #39FF6A;
+  --n2: #2BFFD5;
+  --n3: #F2FF3B;
+  --n4: #FFB627;
+  --n5: #FF7A2B;
+  --n6: #FF4FB0;
+  --n7: #FF3B3B;
+  --n8: #F0FFF2;
+}
+
+[data-palette="rustbelt"] {
+  --void: #0A0604;
+  --floor: #0C0705;
+  --grid: #2A1A0F;
+  --tile: #29190E;
+  --tile-edge: #4E2F17;
+  --cipher: #644227;
+  --ink: #FFE9CF;
+  --ink-dim: #A6825F;
+  --accent: #FFA62B;
+  --accent2: #3FC9B4;
+  --warn: #FFE14D;
+  --danger: #FF4A1C;
+  --n1: #FFC15A;
+  --n2: #4FD8C3;
+  --n3: #FF6A3D;
+  --n4: #E6D3A3;
+  --n5: #FF3D6E;
+  --n6: #9FE07A;
+  --n7: #FFE14D;
+  --n8: #FFFFFF;
+}
+
+[data-palette="icebreaker"] {
+  --void: #05080C;
+  --floor: #060A0F;
+  --grid: #1A2532;
+  --tile: #1A2633;
+  --tile-edge: #33495F;
+  --cipher: #475D75;
+  --ink: #EAF6FF;
+  --ink-dim: #8499AE;
+  --accent: #BFEFFF;
+  --accent2: #7FA8FF;
+  --warn: #FFF3B0;
+  --danger: #FF3B5C;
+  --n1: #8FE3FF;
+  --n2: #A8FFDF;
+  --n3: #FF8FB4;
+  --n4: #B9AEFF;
+  --n5: #FF9F6B;
+  --n6: #FFE066;
+  --n7: #FF5C7A;
+  --n8: #FFFFFF;
+}
