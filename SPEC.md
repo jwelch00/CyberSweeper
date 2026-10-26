@@ -71,11 +71,30 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
 - Per-OS run notes: Windows = SmartScreen "More info → Run anyway"; macOS = on first launch go to System Settings → Privacy & Security → Open Anyway (macOS 15+; right-click → Open works on older versions); Linux = `chmod +x` if needed.
 - The page and builds will be hosted on my home Red Hat Linux server with nginx. Write a deploy script (run on the server) and instructions covering copying files over from Windows, file placement, nginx config, SELinux contexts (`restorecon`), and firewalld. Do not run anything against the server yourself.
 
+## Ghost mode (milestone 4)
+- A second game mode. Arcade stays the main mode.
+- Same infinite no-50/50 board and 3 links, but no signal timer at all.
+- Since a careful player could go forever, add an "End run" action that ends the run and banks the score.
+- Nothing in Ghost mode counts toward any palette unlock. That covers beating rivals, the total-tiles count, and best depth, so Ghost runs don't add to the cumulative stats either.
+- Ghost mode gets its own separate leaderboard of the player's best Ghost runs (score, tiles, depth, date), with no rivals on it. The Arcade leaderboard and rivals stay Arcade-only.
+- No levels or daily challenges.
+- Add a mode picker after "Jack in" on the title screen.
+- The HUD hides the signal meter in Ghost mode.
+- Build milestone 3 with modes in mind so they aren't bolted on later.
+
+## Rival flavor text (milestone 4)
+Each rival in `game/data/rivals.json` has a `bio`, a `taunt` and a `beaten` line. NULL//SAINT also has a `bio_after_beaten`.
+- **Rivals screen:** each rival's bio sits under their name and score. NULL//SAINT switches to `bio_after_beaten` permanently once the player has beaten her.
+- **Game over, if the run beat a rival for the first time:** show that rival's `beaten` line, alongside the unlock card when there is one.
+- **Game over, otherwise:** show the `taunt` line of the next rival above the player's score.
+- **Style:** a quiet one-line quote in ink-dim, not a big banner.
+- **Arcade only:** Ghost runs never beat rivals, so they never trigger these lines.
+
 ## Milestones (stop after each)
 1. Core logic, solver, no-50/50 generator, tests
 2. Bot simulations and difficulty-tuning report
 3. Rendering, input, HUD, game feel (match `design/`)
-4. Palettes, unlocks, save data, rivals leaderboard, remaining screens
+4. Palettes, unlocks, save data, rivals leaderboard, remaining screens, Ghost mode (see below)
 5. Icon wiring and cross-platform builds
 6. Download page and deploy script
 

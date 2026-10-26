@@ -259,3 +259,62 @@ func test_flags_never_change_the_board() -> void:
 	eq(with_flags.board.fingerprint(), gs.board.fingerprint(), "flags changed the board")
 	eq(with_flags.gen.stats, gs.gen.stats, "flags changed generation")
 	eq(with_flags.score, gs.score)
+
+
+# --- game modes ---------------------------------------------------------------
+
+func test_ghost_mode_has_no_signal_timer() -> void:
+	var gs := GameState.new(31, Rules.load_default(), false, GameState.Mode.GHOST)
+	gs.reveal(Vector2i(3, -4))
+	var lost := 0
+	for i in 200:
+		lost += gs.tick(60000).links_lost
+	eq(lost, 0, "no signal-outs in Ghost mode")
+	eq(gs.links, 3)
+	eq(gs.signal_fraction(), 1.0)
+	eq(gs.elapsed_ms, 200 * 60000, "run time still counts")
+	check(not gs.over)
+
+
+func test_ghost_mode_still_costs_links_for_mines() -> void:
+	var gs := GameState.new(31, Rules.load_default(), false, GameState.Mode.GHOST)
+	gs.reveal(Vector2i(3, -4))
+	for i in 3:
+		gs.reveal(_frontier_mine(gs))
+	check(gs.over, "three mine hits still end a Ghost run")
+
+
+func test_end_run_banks_the_score() -> void:
+	var gs := GameState.new(31, Rules.load_default(), false, GameState.Mode.GHOST)
+	gs.reveal(Vector2i(3, -4))
+	for i in 25:
+		gs.reveal(_safe_move(gs))
+	var score := gs.score
+	var res := gs.end_run()
+	eq(res.kind, MoveResult.Kind.END)
+	check(gs.over and gs.ended, "the run is over, ended by the player")
+	eq(gs.score, score, "score is banked as it was")
+	eq(gs.reveal(Vector2i(500, 500)).kind, MoveResult.Kind.NOOP, "no moves after ending")
+	eq(gs.end_run().kind, MoveResult.Kind.NOOP, "ending twice does nothing")
+
+
+func test_ghost_runs_replay_exactly() -> void:
+	var gs := GameState.new(902, Rules.load_default(), false, GameState.Mode.GHOST)
+	gs.reveal(Vector2i.ZERO)
+	for i in 60:
+		gs.reveal(_safe_move(gs))
+		gs.tick(4000)
+	gs.end_run()
+	var again := MoveLog.replay(MoveLog.from_dict(JSON.parse_string(JSON.stringify(gs.move_log.to_dict()))),
+		Rules.load_default())
+	eq(again.mode, GameState.Mode.GHOST)
+	check(again.over and again.ended)
+	eq(again.score, gs.score)
+	eq(again.board.fingerprint(), gs.board.fingerprint())
+
+
+func test_arcade_is_the_default_mode() -> void:
+	var gs := GameState.new(1, Rules.load_default())
+	eq(gs.mode, GameState.Mode.ARCADE)
+	gs.reveal(Vector2i.ZERO)
+	check(gs.tick(1000).links_lost == 0 and gs.signal_fraction() < 1.0, "arcade drains")

@@ -41,3 +41,11 @@ func test_unlocks_cover_every_palette() -> void:
 				check(c.value > 0, id + " has a positive threshold")
 			_:
 				check(false, id + " has an unknown unlock type " + str(c.type))
+
+
+func test_rivals_have_their_flavor_text() -> void:
+	for r in _json("res://data/rivals.json").rivals:
+		for key in ["bio", "taunt", "beaten"]:
+			check(r.has(key) and String(r[key]).strip_edges() != "", "%s has %s" % [r.id, key])
+		if r.id == "netrunner":
+			check(r.has("bio_after_beaten") and r.bio_after_beaten != r.bio, "NULL//SAINT has a bio for after she's beaten")

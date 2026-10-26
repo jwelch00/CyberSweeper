@@ -1,0 +1,240 @@
+{
+  "_about": "CyberSweeper palette tokens. Source of truth for every color in the game, the mockups and the download page. Unlock thresholds are placeholders until the bot simulations (milestone 2) set real numbers.",
+  "roles": {
+    "void": "Background behind and beyond the board; the infinite dark the board fades into",
+    "floor": "Revealed (decrypted) cell fill",
+    "grid": "Hairlines between revealed cells, panel dividers",
+    "tile": "Hidden (encrypted) cell fill",
+    "tileEdge": "1px top/left bevel highlight on hidden cells, panel borders",
+    "cipher": "Faint hex-byte glyph drawn on hidden cells",
+    "ink": "Primary UI text",
+    "inkDim": "Secondary UI text, labels",
+    "accent": "Primary neon: focus, signal meter, selected states, minimap explored area",
+    "accent2": "Secondary neon: chromatic-aberration partner, highlights, unlock moments",
+    "warn": "Low signal, caution states",
+    "danger": "Mine hits, critical signal, lost links",
+    "n1-n8": "Number colors for revealed cells 1 through 8"
+  },
+  "palettes": [
+    {
+      "id": "signal",
+      "name": "Signal",
+      "default": true,
+      "unlock": null,
+      "vibe": "The house look. Cyan and magenta on blue-black.",
+      "colors": {
+        "void": "#06070F",
+        "floor": "#080913",
+        "grid": "#151A33",
+        "tile": "#151A34",
+        "tileEdge": "#232B55",
+        "cipher": "#374173",
+        "ink": "#DCE2FF",
+        "inkDim": "#6C76A6",
+        "accent": "#19F0FF",
+        "accent2": "#FF2BD1",
+        "warn": "#F4FF4F",
+        "danger": "#FF3B5C"
+      },
+      "numbers": [
+        "#33E4FF",
+        "#5CFF9D",
+        "#FF4FA8",
+        "#B48CFF",
+        "#FF9A3D",
+        "#FFF04D",
+        "#FF4D4D",
+        "#FFFFFF"
+      ]
+    },
+    {
+      "id": "hotwire",
+      "name": "Hotwire",
+      "default": false,
+      "unlock": {
+        "type": "beat_rival",
+        "rival": "runner",
+        "text": "Beat mx_halcyon (Runner)"
+      },
+      "vibe": "Hot pink lead, cyan support, plum shadows.",
+      "colors": {
+        "void": "#0D0410",
+        "floor": "#0F0512",
+        "grid": "#2A0F33",
+        "tile": "#270D31",
+        "tileEdge": "#45195A",
+        "cipher": "#5D2E70",
+        "ink": "#FFE3F6",
+        "inkDim": "#A475A9",
+        "accent": "#FF2BD6",
+        "accent2": "#2BF6FF",
+        "warn": "#FFE93B",
+        "danger": "#FF3B3B"
+      },
+      "numbers": [
+        "#2BF6FF",
+        "#FF6BE0",
+        "#FFE93B",
+        "#A495FF",
+        "#FF8F5A",
+        "#7CFFB2",
+        "#FF4545",
+        "#FFFFFF"
+      ]
+    },
+    {
+      "id": "root-access",
+      "name": "Root access",
+      "default": false,
+      "unlock": {
+        "type": "total_tiles",
+        "value": 10000,
+        "text": "Decrypt 10,000 tiles across all runs"
+      },
+      "vibe": "Phosphor terminal. Greens for low numbers, heating to amber and red as danger rises.",
+      "colors": {
+        "void": "#010502",
+        "floor": "#020703",
+        "grid": "#0C2412",
+        "tile": "#0B2213",
+        "tileEdge": "#15462A",
+        "cipher": "#266635",
+        "ink": "#C8FFD4",
+        "inkDim": "#5A9A68",
+        "accent": "#39FF6A",
+        "accent2": "#C6FF3D",
+        "warn": "#FFB627",
+        "danger": "#FF4B2B"
+      },
+      "numbers": [
+        "#39FF6A",
+        "#2BFFD5",
+        "#F2FF3B",
+        "#FFB627",
+        "#FF7A2B",
+        "#FF4FB0",
+        "#FF3B3B",
+        "#F0FFF2"
+      ]
+    },
+    {
+      "id": "rustbelt",
+      "name": "Rustbelt",
+      "default": false,
+      "unlock": {
+        "type": "depth",
+        "value": 300,
+        "text": "Reach depth 300 in one run"
+      },
+      "vibe": "Sodium streetlight amber, oxidized teal, burnt-orange hazards.",
+      "colors": {
+        "void": "#0A0604",
+        "floor": "#0C0705",
+        "grid": "#2A1A0F",
+        "tile": "#29190E",
+        "tileEdge": "#4E2F17",
+        "cipher": "#644227",
+        "ink": "#FFE9CF",
+        "inkDim": "#A6825F",
+        "accent": "#FFA62B",
+        "accent2": "#3FC9B4",
+        "warn": "#FFE14D",
+        "danger": "#FF4A1C"
+      },
+      "numbers": [
+        "#FFC15A",
+        "#4FD8C3",
+        "#FF6A3D",
+        "#E6D3A3",
+        "#FF3D6E",
+        "#9FE07A",
+        "#FFE14D",
+        "#FFFFFF"
+      ]
+    },
+    {
+      "id": "icebreaker",
+      "name": "Icebreaker",
+      "default": false,
+      "unlock": {
+        "type": "beat_rival",
+        "rival": "netrunner",
+        "text": "Beat NULL//SAINT (Netrunner)"
+      },
+      "vibe": "Chrome, gunmetal and frost. The trophy palette.",
+      "colors": {
+        "void": "#05080C",
+        "floor": "#060A0F",
+        "grid": "#1A2532",
+        "tile": "#1A2633",
+        "tileEdge": "#33495F",
+        "cipher": "#475D75",
+        "ink": "#EAF6FF",
+        "inkDim": "#8499AE",
+        "accent": "#BFEFFF",
+        "accent2": "#7FA8FF",
+        "warn": "#FFF3B0",
+        "danger": "#FF3B5C"
+      },
+      "numbers": [
+        "#8FE3FF",
+        "#A8FFDF",
+        "#FF8FB4",
+        "#B9AEFF",
+        "#FF9F6B",
+        "#FFE066",
+        "#FF5C7A",
+        "#FFFFFF"
+      ]
+    }
+  ],
+  "type": {
+    "display": {
+      "family": "Chakra Petch",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "use": "Wordmark, headings, menu items, UI words, buttons"
+    },
+    "data": {
+      "family": "Martian Mono",
+      "weights": [
+        300,
+        400,
+        600,
+        800
+      ],
+      "use": "Cell numbers, score, timers, coordinates, any digits"
+    },
+    "files": "design/fonts (woff2 for web, ttf for Godot). Both SIL OFL 1.1, bundle the license files with the game.",
+    "scale_px_at_1080p": {
+      "wordmark_title": 148,
+      "score": 56,
+      "h1": 44,
+      "h2": 28,
+      "body": 18,
+      "label": 14,
+      "micro": 12
+    },
+    "cell_number": "Martian Mono 800 at 52% of cell size; never below 11px on screen"
+  },
+  "shape": {
+    "chamfer": "One cut corner is the structural motif. Hidden cells: top-left cut at 16% of cell size. Panels and buttons: top-left and bottom-right cut, 10px.",
+    "cell_gap_px": 3,
+    "cell_size_px_default_zoom": 40,
+    "zoom_range": [
+      0.5,
+      2.0
+    ]
+  },
+  "effects": {
+    "scanlines": "Horizontal 1px lines every 3px, ink at 3.5% opacity, whole screen, toggle in settings",
+    "vignette": "Radial, void color, 0% at 55% radius to 85% at corners. Sells the board fading into an infinite void.",
+    "glow": "Numbers and accents: 0 0 6px at 70% + 0 0 18px at 35% of their own color",
+    "chromatic_aberration": "accent2 offset -2px x, accent offset +2px x, used on the wordmark always and on mine hits for 400ms",
+    "cipher_glyph": "Each hidden cell shows a 2-char hex byte in cipher color. Bytes re-roll in a slow diagonal wave (about 1 cell per 80ms). On reveal, the byte scrambles for 120ms then resolves into the number."
+  }
+}

@@ -2,7 +2,7 @@ class_name MoveResult
 extends RefCounted
 ## What one GameState call did, for the UI (milestone 3) and the bots.
 
-enum Kind { NOOP, REVEAL, CHORD, FLAG, TICK }
+enum Kind { NOOP, REVEAL, CHORD, FLAG, TICK, END }
 
 var kind: Kind
 var cell: Vector2i
@@ -10,6 +10,9 @@ var cell: Vector2i
 ## (0 = clicked, 1 = next ring out...) for the 18 ms-per-ring animation.
 var revealed: Array[Vector2i] = []
 var rings := PackedInt32Array()
+## numbers[i] is the number shown on revealed[i], or -1 for a mine hit, so the
+## renderer never has to read the board itself.
+var numbers := PackedInt32Array()
 var hits: Array[Vector2i] = []
 var score_delta := 0
 var links_lost := 0

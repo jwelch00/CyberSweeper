@@ -51,6 +51,14 @@ func _parse_args(raw: PackedStringArray) -> Dictionary:
 	return out
 
 
+## --only takes one or more substrings separated by "|".
+func _matches(full: String, only: String) -> bool:
+	for part in only.split("|", false):
+		if full.contains(part):
+			return true
+	return false
+
+
 func _run_unit(args: Dictionary) -> int:
 	var only: String = args.get("only", "")
 	var files := DirAccess.get_files_at(UNIT_DIR)
@@ -66,7 +74,7 @@ func _run_unit(args: Dictionary) -> int:
 			var name: String = m.name
 			if not name.begins_with("test_"):
 				continue
-			if only != "" and not (f + ":" + name).contains(only):
+			if only != "" and not _matches(f + ":" + name, only):
 				continue
 			var t: TestCase = script.new()
 			t.current = name

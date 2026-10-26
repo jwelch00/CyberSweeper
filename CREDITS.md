@@ -2,7 +2,7 @@
 
 Every third-party asset and tool that ships with CyberSweeper or is used to build it.
 
-## Fonts (bundled with the game from milestone 3)
+## Fonts (bundled in game/assets/fonts with their licenses)
 
 | Font | Use | Copyright | License |
 | --- | --- | --- | --- |
@@ -19,4 +19,8 @@ Godot's own third-party components are listed in its `COPYRIGHT.txt` and at http
 
 ## Audio and art
 
-None yet. Everything else (design, icon, palettes) is original work for this project. Any CC0 audio added later goes here with its source and license.
+- **Sound effects** (`game/assets/sfx/*.wav`): synthesized from scratch by `tools/make_sfx.py`, original to this project.
+- **Glyphs** (flag, mine): drawn at runtime from the shapes in `design/shared/board.js`, original to this project.
+- Everything else (design, icon, palettes) is original work for this project.
+
+No third-party audio or art is used. Any CC0 asset added later goes here with its source and license.

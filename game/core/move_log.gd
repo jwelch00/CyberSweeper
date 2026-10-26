@@ -6,8 +6,10 @@ const REVEAL := 0
 const FLAG := 1
 const CHORD := 2
 const TICK := 3
+const END := 4
 
 var seed := 0
+var mode: int = 0   # GameState.Mode
 var ops := PackedInt32Array()   # triples: op, a, b (cell x, y; or ms, 0)
 
 
@@ -22,12 +24,13 @@ func count() -> int:
 
 
 func to_dict() -> Dictionary:
-	return {"seed": seed, "ops": Array(ops)}
+	return {"seed": seed, "mode": mode, "ops": Array(ops)}
 
 
 static func from_dict(d: Dictionary) -> MoveLog:
 	var log := MoveLog.new()
 	log.seed = int(d.seed)
+	log.mode = int(d.get("mode", 0))
 	for v in d.ops:
 		log.ops.append(int(v))
 	return log
@@ -35,7 +38,7 @@ static func from_dict(d: Dictionary) -> MoveLog:
 
 ## Plays the log into a fresh GameState.
 static func replay(log: MoveLog, rules: Rules, immortal := false) -> GameState:
-	var gs := GameState.new(log.seed, rules, immortal)
+	var gs := GameState.new(log.seed, rules, immortal, log.mode as GameState.Mode)
 	apply_ops(gs, log, 0, log.count())
 	return gs
 
@@ -53,3 +56,5 @@ static func apply_ops(gs: GameState, log: MoveLog, from: int, to: int) -> void:
 				gs.chord(c)
 			TICK:
 				gs.tick(c.x)
+			END:
+				gs.end_run()

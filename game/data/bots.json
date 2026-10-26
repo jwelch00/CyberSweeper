@@ -1,5 +1,5 @@
 {
-  "_about": "Headless bot profiles. The three rivals plus 'reference', a stand-in for a decent human used only to tune run length. Times are milliseconds of simulated time. attention = how far (cells) from its last click a bot looks for a safe move; with nothing safe in view it guesses locally with probability local_guess, otherwise it searches the whole board, paying search_ms. followup_ms = time for a quick extra click on a cell it had already worked out, next to its last click (people click a solved patch in quick succession). min_move_ms = the floor for any action (NULL//SAINT: 500, human pace).",
+  "_about": "Headless bot profiles. The three rivals plus two tuning-only profiles: 'reference' (a decent human, sets run length) and 'expert' (a strong human, checks NULL//SAINT is beatable). Times are milliseconds of simulated time. attention = how far (cells) from its last click a bot looks for a safe move; with nothing safe in view it guesses locally with probability local_guess, otherwise it searches the whole board, paying search_ms. followup_ms = time for a quick extra click on a cell it had already worked out, next to its last click (people click a solved patch in quick succession). min_move_ms = the floor for any action (NULL//SAINT: 500, human pace).",
   "rookie": {
     "name": "script.kitty",
     "label": "rookie",
@@ -74,6 +74,25 @@
     "local_guess": 0.15,
     "search_ms": 2000,
     "followup_ms": 400,
+    "min_move_ms": 200
+  },
+  "expert": {
+    "name": "expert",
+    "label": "strong human (tuning only)",
+    "tier": 3,
+    "think_median_ms": 1100,
+    "think_sigma": 0.4,
+    "think_min_ms": 450,
+    "tier_extra_ms": [0, 0, 500, 1000],
+    "guess_extra_ms": 800,
+    "misclick": 0.006,
+    "chord": true,
+    "chord_min": 3,
+    "flag_ms": 220,
+    "attention": 14,
+    "local_guess": 0.05,
+    "search_ms": 1200,
+    "followup_ms": 300,
     "min_move_ms": 200
   }
 }

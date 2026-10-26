@@ -2,7 +2,35 @@
 
 Infinite, no-guessing Minesweeper with a cyberpunk look, for Windows, macOS and Linux. Three links, a draining signal bar, and never a coin flip. Made with Claude.
 
-**Status: milestone 2 of 6** (bots and difficulty tuning). Milestone 1 built the core logic, solver, no-50/50 generator and tests. There's no playable window yet; that's milestone 3. See `SPEC.md` for the full brief and `design/` for the look.
+**Status: milestone 3 of 6** (rendering, input, HUD, game feel). The gameplay screen is playable. The title, pause, settings, game-over, palettes and rivals screens, save data and Ghost mode's picker arrive in milestone 4. See `SPEC.md` for the full brief and `design/` for the look. Post-launch ideas (not scheduled) live in `IDEAS.md`.
+
+## Playing
+
+Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path game`. A run starts straight away: click anywhere to jack in.
+
+| Input | Action |
+| --- | --- |
+| Left click | decrypt a cell |
+| Left click on a number | chord (hold to preview its hidden neighbours) |
+| Right click | flag (your opinion only; the game never reads flags) |
+| Drag, WASD or arrow keys | pan |
+| Mouse wheel | zoom (0.5× to 2×) |
+| R | run it back (after a run ends) |
+| F11 | fullscreen |
+| M | mute sound |
+
+**Dev keys until milestone 4 adds the screens:**
+
+| Key | Action |
+| --- | --- |
+| F2 | cycle palettes |
+| F3 | FPS and frame-time overlay |
+| F6 | scanlines on/off |
+| F7 | reduced motion on/off |
+| F8 | switch between Arcade and Ghost mode (starts a new run) |
+| Ctrl+E | end a Ghost run |
+
+`godot --path game -- --mode ghost --seed 1234` starts a specific seed or mode.
 
 ## Engine version
 
@@ -20,17 +48,29 @@ game/                  Godot project (open game/project.godot in the editor)
     generator.gd       mine placement, chunk proofs, repairs, backstop
     game_state.gd      the API bots and UI call: reveal / chord / flag / tick
     rules.gd           loads data/tuning.json
-    bot.gd             headless player: the three rivals and the tuning reference
+    bot.gd             headless player: the three rivals and the tuning profiles
+    session.gd         runs a GameState on a worker thread for the UI
+  ui/                  the gameplay screen (reads the core only through Session)
+    main.tscn          entry scene; also screenshot (--shot) and gallery modes
+    game_view.gd       input, results -> visuals, effects
+    board_view.gd      one-shader board, 256x256 wrap-around cell texture
+    board.gdshader     every cell state, cipher drift, glow
+    glyph_atlas.gd     digits, hex, flag and mine drawn once into textures
+    hud/               cut-corner panels, signal meter, score, minimap
+  assets/              fonts + OFL, palettes.json (copied from design/), sfx
   data/
     tuning.json        every gameplay number (tuned in milestone 2)
     bots.json          bot profiles: tier, think time, error rates
     rivals.json        approved rival scores for the leaderboard
     unlocks.json       palette unlock conditions (approved thresholds)
   sim/run_sim.gd       headless bot runs
-  tests/               test runner, unit tests, property suite
+  tests/               test runner, unit tests, property suite, ui_smoke.gd
 tools/
   run_tests.py         runs the suites, property games in parallel
   simulate.py          runs the bots, tunes, writes the tuning report
+  sync_design.py       copies palettes and fonts from design/ (--check verifies)
+  make_sfx.py          synthesizes the sound effects
+  shots.py             renders comparison screenshots into test-output/shots/
 docs/tuning-report.md  bot results behind the current tuning and rival scores
 design/                reference designs (read-only)
 ```
@@ -60,7 +100,7 @@ From the repo root:
 python tools/run_tests.py
 ```
 
-That's the **fast** suite: unit tests plus 200 property games, about a minute and a half on 6 cores. Other suites:
+That's the **fast** suite: unit tests, the UI smoke test and 200 property games, about a minute and a half on 6 cores. The UI smoke test plays the real gameplay screen with real mouse and keyboard events and checks that the board always shows what the game knows. Other suites:
 
 ```bash
 python tools/run_tests.py --suite gate
@@ -68,7 +108,7 @@ python tools/run_tests.py --suite unit
 python tools/run_tests.py --suite property --driver sloppy --games 50 --moves 300
 ```
 
-- `gate` is unit tests plus 3,000 property games of 400 moves (1,000 per driver). It must pass before any milestone is called done. It takes about 17 minutes with `--jobs 8`.
+- `gate` is unit tests, the UI smoke test and 3,000 property games of 400 moves (1,000 per driver). It must pass before any milestone is called done. It takes about 17 minutes with `--jobs 8`.
 - `--jobs N` sets the worker count. The default is half your cores.
 - Workers run at low CPU priority.
 - The exit code is non-zero if anything fails, including any Godot script error in the output.
@@ -109,6 +149,23 @@ godot --headless --path game -s res://tests/run_tests.gd -- --suite replay --fil
 
 Report columns: **locks** is chunks locked, and **proofs** is how many of them were proven fully solvable. **Pockets** are chunks the generator couldn't prove. They still keep the no-50/50 rule, but some cells in them may never become provable, so this should be 0. **Near isl** counts pockets next to a far-click island; they come from the player's own guess. **Islands** are chunks locked by a far click, which are allowed and unproven.
 
+## Screenshots
+
+```bash
+python tools/shots.py
+```
+
+This renders seeded screenshots into `test-output/shots/`:
+- every cell state in all five palettes, at 1× and 0.5×;
+- gameplay in each palette;
+- the zoom limits;
+- Ghost mode;
+- the real screen mid-play.
+
+It needs a display. On a headless Linux box, point `DISPLAY` at an Xvfb.
+
+Colors come only from `game/assets/tokens/palettes.json`, a byte-for-byte copy of `design/tokens/palettes.json`. Run `python tools/sync_design.py` after design changes, and `--check` to verify the copy; a unit test checks it too.
+
 ## Bots, rivals and tuning
 
 Four headless bots play the real game through the same `GameState` API the UI will use. Each sees only revealed numbers and mines, through its own solver limited to its tier. It spends simulated think time before every move, so the signal bar drains while it thinks.
@@ -119,6 +176,7 @@ Four headless bots play the real game through the same `GameState` API the UI wi
 | mx_halcyon | adds subset rules, chords | medium, low error rate | Runner rival |
 | NULL//SAINT | full solver, chords | never faster than 0.5 s a move, rare errors | Netrunner rival |
 | reference | like Runner but slower and sloppier | | stands in for a decent human; sets the run-length target |
+| expert | full solver, quicker than reference, fewer misclicks | | stands in for a strong human; checks NULL//SAINT is beatable (5.3% of its runs beat 7,640) |
 
 Run them:
 

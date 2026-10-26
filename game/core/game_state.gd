@@ -5,6 +5,10 @@ extends RefCounted
 
 const NB := Board.NB
 
+## ARCADE is the main mode. GHOST has no signal timer; the player ends the run
+## with end_run() and the score is banked (milestone 4 keeps its own records).
+enum Mode { ARCADE, GHOST }
+
 var rules: Rules
 var seed: int
 var board: Board
@@ -15,6 +19,9 @@ var move_log := MoveLog.new()
 
 ## Tests only: link losses are counted but never end the run.
 var immortal := false
+var mode: Mode = Mode.ARCADE
+## The player ended the run (Ghost mode's "End run").
+var ended := false
 
 var started := false
 var over := false
@@ -34,10 +41,12 @@ var backstop_armed := false
 var stuck_count := 0
 
 
-func _init(p_seed: int, p_rules: Rules = null, p_immortal := false) -> void:
+func _init(p_seed: int, p_rules: Rules = null, p_immortal := false, p_mode: Mode = Mode.ARCADE) -> void:
 	rules = p_rules if p_rules != null else Rules.load_default()
 	seed = p_seed & CsHash.MASK32
 	immortal = p_immortal
+	mode = p_mode
+	move_log.mode = mode
 	board = Board.new(seed, rules)
 	gen = Generator.new(board, rules)
 	solver = Solver.from_rules(rules)
@@ -119,12 +128,15 @@ func flag(c: Vector2i) -> MoveResult:
 
 
 ## Advances run time: drains signal; signal at 0 costs a link and refills.
+## Ghost mode keeps time but has no signal.
 func tick(ms: int) -> MoveResult:
 	var res := MoveResult.new(MoveResult.Kind.TICK)
 	if not started or over or ms <= 0:
 		return res
 	move_log.add(MoveLog.TICK, ms)
 	elapsed_ms += ms
+	if mode == Mode.GHOST:
+		return res
 	signal_level -= rules.drain_rate(elapsed_ms) * float(ms) / 1000.0
 	while signal_level <= 0.0 and not over:
 		_lose_link(res)
@@ -134,10 +146,24 @@ func tick(ms: int) -> MoveResult:
 	return res
 
 
+## Ends the run now and banks the score (Ghost mode's "End run"; Arcade runs
+## end when the links run out).
+func end_run() -> MoveResult:
+	move_log.add(MoveLog.END, 0)
+	var res := MoveResult.new(MoveResult.Kind.END)
+	if not started or over:
+		res.kind = MoveResult.Kind.NOOP
+		return res
+	over = true
+	ended = true
+	res.game_over = true
+	return res
+
+
 # --- state for the UI and bots ------------------------------------------------
 
 func signal_fraction() -> float:
-	return signal_level / rules.signal_max
+	return 1.0 if mode == Mode.GHOST else signal_level / rules.signal_max
 
 
 func depth_of(c: Vector2i) -> int:
@@ -169,10 +195,12 @@ func _apply(rec: Dictionary, res: MoveResult) -> void:
 	for cell: Vector2i in rec.cells:
 		if board.state_at(cell) == Board.HIT:
 			solver.add_mine(cell)
+			res.numbers.append(-1)
 			hits += 1
 			_lose_link(res)
 		else:
 			var n := board.number(cell)
+			res.numbers.append(n)
 			solver.add_number(cell, n)
 			score += n
 			res.score_delta += n

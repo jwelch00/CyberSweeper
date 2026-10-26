@@ -31,7 +31,7 @@ import run_tests as rt  # noqa: E402  (shared Godot discovery and launching)
 ROOT = rt.ROOT
 OUT = rt.OUT / "sim"
 TUNING_SECTIONS = {"links", "signal", "density", "start", "solver", "generator"}
-PROFILES = ["rookie", "runner", "netrunner", "reference"]
+PROFILES = ["rookie", "runner", "netrunner", "reference"]   # expert is opt-in: --profiles ...,expert
 
 
 # --- running ------------------------------------------------------------------
@@ -332,6 +332,7 @@ def main() -> int:
     ap.add_argument("--sensitivity", action="store_true",
                     help="also run one-at-a-time changes of the signal settings for the report")
     ap.add_argument("--report", help="write a Markdown report here")
+    ap.add_argument("--beat", type=int, help="report how often each profile's runs beat this score")
     ap.add_argument("--godot")
     ap.add_argument("--jobs", type=int, default=8)
     ap.add_argument("--shard", type=int, default=10)
@@ -363,6 +364,18 @@ def main() -> int:
         print_table(summary)
         for t, m, ok in targets(result["runs"], summary):
             print(f"     {'ok ' if ok else 'MISS'} {t}: {m}")
+        if args.beat:
+            print(f"\n  runs beating {args.beat:,}:")
+            for p in profiles:
+                scores = [r["score"] for r in result["runs"][p]]
+                share = sum(1 for v in scores if v > args.beat) / len(scores)
+                print(f"     {p:10} {share * 100:5.1f}%  ({sum(1 for v in scores if v > args.beat)} of {len(scores)})")
+            if "expert" in profiles:
+                scores = [r["score"] for r in result["runs"]["expert"]]
+                for want in (0.03, 0.04, 0.05):
+                    v = round_score(pctl(scores, 1 - want))
+                    got = sum(1 for x in scores if x > v) / len(scores)
+                    print(f"     score expert beats in ~{want * 100:.0f}% of runs: {v:,} (measured {got * 100:.1f}%)")
         all_rows.append({"settings": settings, "label": label, "summary": summary})
         last = (result, summary, tuning, bots)
     (OUT / "summary.json").write_text(json.dumps(all_rows, indent=2))

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Runs CyberSweeper's headless test suites. Works on Windows, macOS and Linux.
 
-    python tools/run_tests.py                 # fast: unit tests + 200 property games
-    python tools/run_tests.py --suite gate    # unit tests + 3,000 property games (milestone gate)
+    python tools/run_tests.py                 # fast: unit + UI smoke + 200 property games
+    python tools/run_tests.py --suite gate    # unit + UI smoke + 3,000 property games (milestone gate)
     python tools/run_tests.py --suite unit
     python tools/run_tests.py --suite property --driver sloppy --games 50 --moves 300
 
@@ -65,16 +65,15 @@ def low_priority_kwargs() -> dict:
     return {"preexec_fn": lambda: os.nice(19)}
 
 
-def run_godot(godot: str, args: list[str], timeout: int) -> tuple[int, str]:
-    cmd = [godot, "--headless", "--path", str(GAME)] + args
+def run_godot(godot: str, args: list[str], timeout: int, headless: bool = True) -> tuple[int, str]:
+    cmd = [godot] + (["--headless"] if headless else []) + ["--path", str(GAME)] + args
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            encoding="utf-8", errors="replace", **low_priority_kwargs())
     except subprocess.TimeoutExpired as e:
-        out = (e.stdout or "") + (e.stderr or "")
-        if isinstance(out, bytes):
-            out = out.decode("utf-8", "replace")
-        return 124, out + f"\nTIMEOUT after {timeout}s"
+        def text(b) -> str:
+            return b.decode("utf-8", "replace") if isinstance(b, bytes) else (b or "")
+        return 124, text(e.stdout) + text(e.stderr) + f"\nTIMEOUT after {timeout}s"
     out = p.stdout + p.stderr
     code = p.returncode
     if code == 0 and any(m in out for m in ERROR_MARKERS):
@@ -99,6 +98,15 @@ def run_unit(godot: str) -> bool:
         if line.strip().startswith("ok "):
             continue
         if line.strip():
+            print("  " + line)
+    return code == 0
+
+
+def run_ui_smoke(godot: str) -> bool:
+    print("== ui smoke (the real gameplay screen, driven by input events)")
+    code, out = run_godot(godot, ["--resolution", "1920x1080", "-s", "res://tests/ui_smoke.gd"], 600)
+    for line in out.splitlines():
+        if line.startswith("FAIL") or line.startswith("ui smoke") or "SCRIPT ERROR" in line:
             print("  " + line)
     return code == 0
 
@@ -230,6 +238,7 @@ def main() -> int:
     ok = True
     if args.suite in ("fast", "gate", "unit"):
         ok = run_unit(godot) and ok
+        ok = run_ui_smoke(godot) and ok
     if args.suite in ("fast", "gate"):
         prop_ok, _ = run_property(godot, SUITES[args.suite], args.jobs, args.shard)
         ok = prop_ok and ok

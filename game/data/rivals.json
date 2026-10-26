@@ -1,8 +1,33 @@
 {
-  "_about": "Rival scores on the local leaderboard. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. Approved 2026-10-26.",
+  "_about": "Rival scores on the local leaderboard. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. Approved 2026-10-26. bio / taunt / beaten (and NULL//SAINT's bio_after_beaten) are shown on the Rivals and game-over screens (SPEC.md, Rival flavor text).",
   "rivals": [
-    {"id": "rookie", "name": "script.kitty", "label": "rookie", "score": 1890},
-    {"id": "runner", "name": "mx_halcyon", "label": "runner", "score": 3590},
-    {"id": "netrunner", "name": "NULL//SAINT", "label": "netrunner", "score": 7640}
+    {
+      "id": "rookie",
+      "name": "script.kitty",
+      "label": "rookie",
+      "score": 1890,
+      "bio": "Learned to netrun last Tuesday. Guesses when she gets bored, which is often.",
+      "taunt": "script.kitty is cackling. Somewhere, a tile she guessed on was safe.",
+      "beaten": "script.kitty has left the chat. She'll be back. She always comes back."
+    },
+    {
+      "id": "runner",
+      "name": "mx_halcyon",
+      "label": "runner",
+      "score": 3590,
+      "bio": "Fast hands, clean chords, zero patience for people who flag every single mine.",
+      "taunt": "mx_halcyon didn't even look up.",
+      "beaten": "mx_halcyon nods once and logs off. From them, that's a standing ovation."
+    },
+    {
+      "id": "netrunner",
+      "name": "NULL//SAINT",
+      "label": "netrunner",
+      "score": 7640,
+      "bio": "Has never guessed. Has never hurried. Has never lost to you.",
+      "bio_after_beaten": "Has never guessed. Has never hurried. Had never lost to you.",
+      "taunt": "She saw that mine three moves before you did.",
+      "beaten": "For the first time on record, NULL//SAINT has nothing to say."
+    }
   ]
 }
