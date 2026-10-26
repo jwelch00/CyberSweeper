@@ -1,0 +1,10 @@
+{
+  "_about": "Palette unlock conditions, same shape as design/tokens/palettes.json but with the thresholds approved after the milestone 2 bot runs (the tokens still hold the old placeholders). The game reads unlocks from here; colors still come from the tokens. beat_rival means a run scoring above that rival's score in rivals.json.",
+  "palettes": {
+    "signal": null,
+    "hotwire": {"type": "beat_rival", "rival": "runner", "text": "Beat mx_halcyon (Runner)"},
+    "root-access": {"type": "total_tiles", "value": 25000, "text": "Decrypt 25,000 tiles across all runs"},
+    "rustbelt": {"type": "depth", "value": 120, "text": "Reach depth 120 in one run"},
+    "icebreaker": {"type": "beat_rival", "rival": "netrunner", "text": "Beat NULL//SAINT (Netrunner)"}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "_about": "Rival scores on the local leaderboard. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. Approved 2026-10-26.",
+  "rivals": [
+    {"id": "rookie", "name": "script.kitty", "label": "rookie", "score": 1890},
+    {"id": "runner", "name": "mx_halcyon", "label": "runner", "score": 3590},
+    {"id": "netrunner", "name": "NULL//SAINT", "label": "netrunner", "score": 7640}
+  ]
+}

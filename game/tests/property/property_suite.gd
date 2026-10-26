@@ -214,7 +214,13 @@ func _flag_and_chord(gs: GameState, rng: RandomNumberGenerator, ctx: Dictionary)
 			hidden.append(q)
 	if need < 0 or need >= hidden.size():
 		return null
-	hidden.shuffle()
+	# Seeded shuffle (Array.shuffle() uses the global RNG, which would make
+	# games unreproducible from their seed).
+	for i in range(hidden.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp := hidden[i]
+		hidden[i] = hidden[j]
+		hidden[j] = tmp
 	for i in need:
 		gs.flag(hidden[i])
 		ctx.flags += 1

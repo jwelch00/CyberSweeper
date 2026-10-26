@@ -6,7 +6,7 @@
   "signal": {
     "max": 100.0,
     "drain_per_sec": 2.0,
-    "drain_growth_per_min": 0.08,
+    "drain_growth_per_min": 0.12,
     "refill_per_cell": 1.5,
     "refill_cap_per_move": 25.0,
     "low_fraction": 0.30,

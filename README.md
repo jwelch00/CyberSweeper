@@ -2,7 +2,7 @@
 
 Infinite, no-guessing Minesweeper with a cyberpunk look, for Windows, macOS and Linux. Three links, a draining signal bar, and never a coin flip. Made with Claude.
 
-**Status: milestone 1 of 6** (core logic, solver, no-50/50 generator, tests). There's no playable window yet; that's milestone 3. See `SPEC.md` for the full brief and `design/` for the look.
+**Status: milestone 2 of 6** (bots and difficulty tuning). Milestone 1 built the core logic, solver, no-50/50 generator and tests. There's no playable window yet; that's milestone 3. See `SPEC.md` for the full brief and `design/` for the look.
 
 ## Engine version
 
@@ -20,9 +20,18 @@ game/                  Godot project (open game/project.godot in the editor)
     generator.gd       mine placement, chunk proofs, repairs, backstop
     game_state.gd      the API bots and UI call: reveal / chord / flag / tick
     rules.gd           loads data/tuning.json
-  data/tuning.json     every gameplay number (placeholders until milestone 2)
+    bot.gd             headless player: the three rivals and the tuning reference
+  data/
+    tuning.json        every gameplay number (tuned in milestone 2)
+    bots.json          bot profiles: tier, think time, error rates
+    rivals.json        approved rival scores for the leaderboard
+    unlocks.json       palette unlock conditions (approved thresholds)
+  sim/run_sim.gd       headless bot runs
   tests/               test runner, unit tests, property suite
-tools/run_tests.py     runs the suites, property games in parallel
+tools/
+  run_tests.py         runs the suites, property games in parallel
+  simulate.py          runs the bots, tunes, writes the tuning report
+docs/tuning-report.md  bot results behind the current tuning and rival scores
 design/                reference designs (read-only)
 ```
 
@@ -59,7 +68,7 @@ python tools/run_tests.py --suite unit
 python tools/run_tests.py --suite property --driver sloppy --games 50 --moves 300
 ```
 
-- `gate` is unit tests plus 3,000 property games of 400 moves (1,000 per driver). It must pass before any milestone is called done. It takes about 30 minutes with `--jobs 8`.
+- `gate` is unit tests plus 3,000 property games of 400 moves (1,000 per driver). It must pass before any milestone is called done. It takes about 17 minutes with `--jobs 8`.
 - `--jobs N` sets the worker count. The default is half your cores.
 - Workers run at low CPU priority.
 - The exit code is non-zero if anything fails, including any Godot script error in the output.
@@ -99,6 +108,48 @@ godot --headless --path game -s res://tests/run_tests.gd -- --suite replay --fil
 ```
 
 Report columns: **locks** is chunks locked, and **proofs** is how many of them were proven fully solvable. **Pockets** are chunks the generator couldn't prove. They still keep the no-50/50 rule, but some cells in them may never become provable, so this should be 0. **Near isl** counts pockets next to a far-click island; they come from the player's own guess. **Islands** are chunks locked by a far click, which are allowed and unproven.
+
+## Bots, rivals and tuning
+
+Four headless bots play the real game through the same `GameState` API the UI will use. Each sees only revealed numbers and mines, through its own solver limited to its tier. It spends simulated think time before every move, so the signal bar drains while it thinks.
+
+| Bot | Logic | Pace | Role |
+| --- | --- | --- | --- |
+| script.kitty | single-cell rules only, never chords | slow, occasional misclicks and guesses | Rookie rival |
+| mx_halcyon | adds subset rules, chords | medium, low error rate | Runner rival |
+| NULL//SAINT | full solver, chords | never faster than 0.5 s a move, rare errors | Netrunner rival |
+| reference | like Runner but slower and sloppier | | stands in for a decent human; sets the run-length target |
+
+Run them:
+
+```bash
+python tools/simulate.py --games 300
+python tools/simulate.py --profiles reference --games 60 --grid signal.drain_per_sec=1.6,2.0,2.4
+python tools/simulate.py --profiles runner,reference --games 100 --set runner.think_median_ms=1900
+python tools/simulate.py --games 300 --sensitivity --report docs/tuning-report.md
+```
+
+- `--set` and `--grid` take a `tuning.json` setting (`signal.drain_per_sec`) or a bot setting (`runner.think_median_ms`).
+- Every profile plays the same seeded boards, and a run is reproducible from its seed.
+- The last command regenerates the report.
+
+**Current rival scores** (each bot's median run, approved 2026-10-26; details in `docs/tuning-report.md`):
+
+| Rival | Score |
+| --- | --- |
+| script.kitty | 1,890 |
+| mx_halcyon | 3,590 |
+| NULL//SAINT | 7,640 |
+
+A reference ("decent human") run lasts a median 9.5 minutes, 6.6–11.3 for most runs, and scores a median 2,960.
+
+**Palette unlocks** live in `game/data/unlocks.json`:
+- **Hotwire:** beat mx_halcyon.
+- **Root access:** decrypt 25,000 tiles across all runs.
+- **Rustbelt:** reach depth 120 in one run.
+- **Icebreaker:** beat NULL//SAINT.
+
+`design/tokens/palettes.json` still lists the old placeholder thresholds. The game reads unlocks from `unlocks.json`.
 
 ## How the no-50/50 guarantee works
 
