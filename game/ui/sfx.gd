@@ -2,7 +2,7 @@ class_name Sfx
 extends Node
 ## Short synthesized sounds (self-made by tools/make_sfx.py, see CREDITS.md).
 
-const NAMES := ["reveal", "cascade", "flag", "hit", "link", "low", "end"]
+const NAMES := ["reveal", "cascade", "flag", "hit", "link", "low", "end", "heartbeat", "denied", "accepted", "slam"]
 
 var enabled := true
 var volume_db := -12.0

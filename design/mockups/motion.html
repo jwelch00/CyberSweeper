@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CyberSweeper — motion lab</title>
+<link rel="stylesheet" href="../shared/cs.css">
+<link rel="stylesheet" href="../shared/screens.css">
+<style>
+  body { overflow: hidden; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--void); }
+  #stage > .screen { position: absolute; inset: 0; }
+  .hidden { visibility: hidden; }
+</style>
+</head>
+<body>
+<!-- Motion lab: every moving part of CyberSweeper, triggerable. ?demo=<name>&rec=1 auto-plays one demo (used to record design/motion/*.mp4). -->
+<div id="stage">
+  <div id="title" class="hidden"></div>
+  <div id="game" class="hidden"></div>
+  <div id="over" class="hidden"></div>
+</div>
+<div class="lab" id="lab">
+  <button data-d="boot">1 Jack-in boot</button>
+  <button data-d="cards">2 Title cards</button>
+  <button data-d="cascade">3 Sandevistan cascade</button>
+  <button data-d="strain">4 Strain (cyberpsychosis)</button>
+  <button data-d="micro">5 Micro-text</button>
+  <button data-d="hit">6 Mine hit</button>
+  <button data-d="mosh">7 Datamosh transitions</button>
+  <button data-d="reset">Reset</button>
+  <span>Add ?palette=hotwire etc. to re-skin. Respects prefers-reduced-motion.</span>
+</div>
+<script src="../shared/board.js"></script>
+<script src="../shared/fx.js"></script>
+<script src="../shared/screens.js"></script>
+<script>
+  CS.applyPalette(); CS.injectGlyphs();
+  const q = new URLSearchParams(location.search);
+  if (q.get("rec")) document.getElementById("lab").remove();
+  const $ = (id) => document.getElementById(id), stage = $("stage");
+  let G;
+  function show(id) { for (const s of ["title", "game", "over"]) $(s).classList.toggle("hidden", s !== id); $(id).style.visibility = ""; }
+  function build() {
+    for (const s of ["title", "game", "over"]) { const el = $(s); el.className = "hidden"; el.removeAttribute("style"); el.innerHTML = ""; }
+    CS.buildTitle($("title"));
+    G = CS.buildGame($("game"), { links: 3, signal: 72, carve: [104, 33, 116, 45] });
+    CS.buildOver($("over"));
+    FX.tickers(stage);
+  }
+  function setSignal(p) { CS.setSignal($("game"), p); }
+  function pop(text, x, y) {
+    const v = G.boardEl._view, pitch = G.boardEl._pitch, d = document.createElement("div");
+    d.className = "pop"; d.textContent = text; d.style.setProperty("--pc", "var(--accent)"); d.style.fontSize = "28px";
+    d.style.left = (v.px + (x - v.x0) * pitch + 10) + "px"; d.style.top = (v.py + (y - v.y0) * pitch - 30) + "px";
+    G.vp.appendChild(d); d.animate([{ translate: "0 10px", opacity: 0 }, { translate: "0 0", opacity: 1, offset: .2 }, { translate: "0 -30px", opacity: 0 }], { duration: 1100, fill: "forwards" }).onfinish = () => d.remove();
+  }
+  const D = {
+    async boot() { const pr = FX.moshPrep(stage, $("title")); await FX.wait(400); const b = await FX.boot(stage); await FX.datamosh(stage, b, $("title"), pr); b.remove(); await FX.wait(1000); },
+    async cards() { show("game"); await FX.wait(500); await FX.card($("game"), { text: "RIVAL DOWN", jp: "撃破", sub: "script.kitty  1,890", color: "--accent" }); await FX.wait(700); await FX.card($("game"), { text: "NEW BEST", jp: "記録更新", sub: "2,293", color: "--accent2" }); await FX.wait(600); },
+    async cascade() { show("game"); await FX.wait(500); const [x, y] = G.st.num[39 * G.st.W + 110] === 0 && !G.st.mine[39 * G.st.W + 110] ? [110, 39] : G.cascadeAt; const r = await FX.cascade(G.boardEl, G.st, x, y); pop("+" + r.score, x, y); await FX.wait(1400); },
+    async hit() { show("game"); await FX.wait(500); const pip = [...G.pips].reverse().find((p) => !p.classList.contains("lost")); await FX.mineHit($("game"), G.boardEl, G.st, ...G.mineAt, pip); await FX.wait(3400); },
+    async strain() {
+      show("game"); await FX.wait(400);
+      const pips = [...G.pips]; FX.shatter(pips[2]); await FX.wait(250); FX.shatter(pips[1]);
+      $("game").querySelector(".g-tl .num").textContent = "1/3";
+      FX.strain($("game"), 1); await FX.wait(3200);
+      for (let p = 72; p >= 8; p -= 2) { setSignal(p); await FX.wait(30); }
+      FX.strain($("game"), 2); await FX.wait(4200);
+    },
+    async micro() { show("game"); const sig = $("game").querySelector(".g-sig"); sig.animate([{ scale: 1 }, { scale: 1 }], { duration: 10 }); await FX.wait(3000); },
+    async mosh() {
+      show("title"); const p1 = FX.moshPrep(stage, $("game")), p2 = FX.moshPrep(stage, $("over")); await FX.wait(700);
+      await FX.datamosh(stage, $("title"), $("game"), p1); $("title").classList.add("hidden"); await FX.wait(900);
+      await FX.card($("game"), { text: "LINK SEVERED", jp: "切断", sub: "2,293", color: "--danger", full: true });
+      await FX.datamosh(stage, $("game"), $("over"), p2); $("game").classList.add("hidden"); await FX.wait(1200);
+    },
+    async reset() { build(); show("game"); },
+  };
+  build(); if (q.get("demo") !== "boot") show(q.get("demo") === "mosh" ? "title" : "game");
+  document.querySelectorAll("[data-d]").forEach((b) => b.onclick = () => { if (b.dataset.d !== "reset") build(); D[b.dataset.d](); });
+  document.fonts.ready.then(async () => {
+    window.READY = true;
+    const d = q.get("demo"); if (d) { await FX.wait(300); await D[d](); window.DONE = true; }
+  });
+</script>
+</body>
+</html>

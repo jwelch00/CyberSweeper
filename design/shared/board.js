@@ -156,6 +156,33 @@
     }
     board.innerHTML = html;
     el.appendChild(board);
+    board._view = view; board._st = st; board._pitch = pitch;
+    // corporate lattice overlay: registration marks + chunk ids every 16 cells
+    if (extra.lattice) {
+      const lat = document.createElement("div"); lat.className = "lattice";
+      const CH = 16, [ox, oy] = st.start;
+      let lh = "";
+      const hex = (n) => (n & 0xffff).toString(16).toUpperCase().padStart(4, "0");
+      for (let y = view.y0 - 1; y <= view.y0 + view.rows; y++) for (let x = view.x0 - 1; x <= view.x0 + view.cols; x++) {
+        if (((x - ox) % CH + CH) % CH !== 0 || ((y - oy) % CH + CH) % CH !== 0) continue;
+        const px = view.px + (x - view.x0) * pitch - gap / 2, py = view.py + (y - view.y0) * pitch - gap / 2;
+        const cx = Math.floor((x - ox) / CH), cy = Math.floor((y - oy) / CH);
+        lh += `<i class="reg" style="left:${px}px;top:${py}px"></i><span class="cid" style="left:${px + 8}px;top:${py + 3}px">LAT ${hex(0x3f0 + cx)}:${hex(0x1a0 + cy)}</span>`;
+        lh += `<i class="seam" style="left:${px + 12}px;top:${py}px;width:${CH * pitch - 24}px;height:1px"></i><i class="seam" style="left:${px}px;top:${py + 12}px;height:${CH * pitch - 24}px;width:1px"></i>`;
+      }
+      // edge rulers: one tick per cell, long tick + coordinate per chunk (precise, CAD-like)
+      let rt = "", rl = "";
+      for (let x = view.x0; x < view.x0 + view.cols; x++) {
+        const px = view.px + (x - view.x0) * pitch + (pitch - gap) / 2, ch = ((x - ox) % CH + CH) % CH === 0;
+        rt += `<i style="left:${px}px;height:${ch ? 9 : 3}px"></i>` + (ch ? `<b style="left:${px + 4}px">${x - ox}</b>` : "");
+      }
+      for (let y = view.y0; y < view.y0 + view.rows; y++) {
+        const py = view.py + (y - view.y0) * pitch + (pitch - gap) / 2, ch = ((y - oy) % CH + CH) % CH === 0;
+        rl += `<i style="top:${py}px;width:${ch ? 9 : 3}px"></i>` + (ch ? `<b style="top:${py + 3}px">${oy - y}</b>` : "");
+      }
+      lh += `<div class="ruler top">${rt}</div><div class="ruler left">${rl}</div>`;
+      lat.innerHTML = lh; el.appendChild(lat);
+    }
     // popups
     for (const p of extra.pops || []) {
       const d = document.createElement("div");
@@ -191,6 +218,8 @@
     for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < st.W && Y < st.H && st.rev[Y * st.W + X] && !st.mine[Y * st.W + X]) return true; }
     return false;
   };
+  // DOM cell for world coords (after render)
+  CS.cellEl = function (boardEl, x, y) { const v = boardEl._view; if (x < v.x0 || y < v.y0 || x >= v.x0 + v.cols || y >= v.y0 + v.rows) return null; return boardEl.children[(y - v.y0) * v.cols + (x - v.x0)]; };
   CS.fmt = (n) => n.toLocaleString("en-US");
   window.CS = CS;
 })();

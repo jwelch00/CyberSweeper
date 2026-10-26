@@ -23,6 +23,8 @@ FILES = [
     ("tokens/palettes.json", "tokens/palettes.json"),
     ("fonts/OFL-ChakraPetch.txt", "fonts/OFL-ChakraPetch.txt"),
     ("fonts/OFL-MartianMono.txt", "fonts/OFL-MartianMono.txt"),
+    ("fonts/NotoSansJP-Bold-subset.otf", "fonts/NotoSansJP-Bold-subset.otf"),
+    ("fonts/OFL-NotoSansCJK.txt", "fonts/OFL-NotoSansCJK.txt"),
 ] + [(f"fonts/ChakraPetch-{w}.ttf", f"fonts/ChakraPetch-{w}.ttf") for w in (400, 500, 600, 700)] \
   + [(f"fonts/MartianMono-{w}.ttf", f"fonts/MartianMono-{w}.ttf") for w in (300, 400, 600, 800)]
 

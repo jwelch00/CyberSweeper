@@ -1,16 +1,14 @@
 class_name GameView
 extends Control
-## The gameplay screen. Owns the Session (game on a worker thread), the board,
-## HUD, popups, cursor and effects, turns input into moves and results into
-## visuals. Everything it shows comes from Session results; it never reads
-## the GameState.
+## The gameplay screen. Owns the Session (game on a worker thread), the board
+## and its lattice, afterimages, HUD, popups and cursor, turns input into
+## moves and results into visuals and motion (design/MOTION.md). Everything it
+## shows comes from Session results; it never reads the GameState.
 
-const RING_MS := 18.0
+signal run_over(summary: Dictionary)
+
 const DRAG_PX := 4.0
 const PAN_PX_PER_SEC := 900.0
-const SHAKE_MS := 250.0
-const SHAKE_PX := 8.0
-const ABERRATION_MS := 400.0
 
 var settings := GameSettings.new()
 var rules := Rules.load_default()
@@ -24,18 +22,25 @@ var over := false
 ## Stops run time (no ticks are sent). Milestone 4's pause screen uses it; tests
 ## use it so waiting on results is deterministic.
 var clock_paused := false
+## Screen effects (post, title cards, datamosh). ScreenFlow passes its own;
+## standing alone, the view makes one.
+var fx: ScreenFx
+## Best score this session in this mode, for the NEW BEST card (0 = none yet).
+## Milestone 4's save data makes it the real personal best.
+var best_before := 0
+## Current strain level (0..2), see Strain.
+var strain := 0
 
 var world: Control
 var board: BoardView
+var lattice: LatticeLayer
+var afterimages: AfterimageLayer
 var atlas: GlyphAtlas
 var popups: PopupLayer
 var hud: Hud
 var cursor: CursorLayer
-var overlay: GameOverOverlay
 var sfx: Sfx
-var post: ColorRect
 var vignette: ColorRect
-var fps_label: Label
 
 var _rivals: Array = []
 var _press := Vector2.ZERO
@@ -44,9 +49,12 @@ var _dragging := false
 var _tick_acc := 0.0
 var _shake_start := -1e9
 var _shake_scale := 1.0
-var _aberration_start := -1e9
 var _rng := RandomNumberGenerator.new()
 var _links := 3
+var _beaten := {}
+var _best_shown := false
+var _next_tear := 0.0
+var _next_thump := 0.0
 
 
 func _ready() -> void:
@@ -55,6 +63,9 @@ func _ready() -> void:
 	_rng.randomize()
 	var rv: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/rivals.json"))
 	_rivals = rv.rivals if rv is Dictionary else []
+	if fx == null:
+		fx = ScreenFx.new()
+		add_child(fx)
 
 	world = Control.new()
 	world.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -62,6 +73,12 @@ func _ready() -> void:
 	add_child(world)
 	board = BoardView.new()
 	world.add_child(board)
+	lattice = LatticeLayer.new()
+	lattice.view = board
+	world.add_child(lattice)
+	afterimages = AfterimageLayer.new()
+	afterimages.view = board
+	world.add_child(afterimages)
 	vignette = ColorRect.new()
 	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(vignette)
@@ -76,31 +93,18 @@ func _ready() -> void:
 	hud.view = board
 	hud.rivals = _rivals
 	hud.density_for = func(depth: int) -> float: return rules.density(depth)
+	hud.drain_for = _drain_shown
 	hud.low_fraction = rules.low_fraction
 	hud.critical_fraction = rules.critical_fraction
 	world.add_child(hud)
 	hud.minimap.view = board
-	overlay = GameOverOverlay.new()
-	world.add_child(overlay)
 	cursor = CursorLayer.new()
 	add_child(cursor)
 
-	var layer := CanvasLayer.new()
-	layer.layer = 10
-	add_child(layer)
-	post = ColorRect.new()
-	post.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	post.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var pm := ShaderMaterial.new()
-	pm.shader = load("res://ui/post_fx.gdshader")
-	post.material = pm
-	layer.add_child(post)
-	fps_label = Label.new()
-	fps_label.position = Vector2(12, 1040)
-	fps_label.visible = false
-	layer.add_child(fps_label)
-
 	sfx = Sfx.new()
+	# Shared with the other screens (the boot's sounds), so it keeps playing
+	# while this screen is hidden and paused.
+	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(sfx)
 	atlas = GlyphAtlas.new()
 	add_child(atlas)
@@ -113,25 +117,26 @@ func _ready() -> void:
 func apply_palette(p: Palette) -> void:
 	palette = p
 	board.set_palette(p)
+	lattice.palette = p
+	afterimages.set_palette(p)
 	popups.palette = p
 	hud.set_palette(p)
 	cursor.palette = p
-	overlay.palette = p
+	fx.apply_palette(p)
 	(vignette.material as ShaderMaterial).set_shader_parameter("c_void", p.c("void"))
 	(vignette.material as ShaderMaterial).set_shader_parameter("c_danger", p.c("danger"))
-	var pm := post.material as ShaderMaterial
-	pm.set_shader_parameter("c_void", p.c("void"))
-	pm.set_shader_parameter("c_ink", p.c("ink"))
 	RenderingServer.set_default_clear_color(p.c("void"))
-	fps_label.add_theme_color_override("font_color", p.c("inkDim"))
 
 
 func apply_settings() -> void:
 	board.reduced_motion = settings.reduced_motion
+	hud.reduced_motion = settings.reduced_motion
+	fx.reduced_motion = settings.reduced_motion
+	fx.guard.reduce_flashing = settings.reduce_flashing
 	sfx.enabled = settings.sfx
 	sfx.volume_db = settings.sfx_volume_db
-	fps_label.visible = settings.show_fps
-	(post.material as ShaderMaterial).set_shader_parameter("scanlines", 1.0 if settings.scanlines else 0.0)
+	fx.fps_label.visible = settings.show_fps
+	fx.set_scanlines(settings.scanlines)
 
 
 ## Starts a fresh run (a random seed unless one is given).
@@ -144,11 +149,15 @@ func new_run(seed := -1, p_mode: GameState.Mode = mode) -> void:
 	session = Session.new(seed, rules, true, mode)
 	board.clear()
 	popups.clear()
+	afterimages.clear()
 	hud.minimap.clear()
-	overlay.visible = false
+	lattice.on = false
 	started = false
 	over = false
+	strain = 0
 	_links = rules.start_links
+	_beaten = {}
+	_best_shown = false
 	hud.lost_at = []
 	state = {"seed": session.seed, "links": _links, "signal": 1.0, "signal_shown": 1.0, "score": 0, "tiles": 0,
 		"elapsed_ms": 0,
@@ -179,14 +188,25 @@ func _process(delta: float) -> void:
 	_update_hover()
 	_update_effects()
 	hud.state = state
-	if fps_label.visible:
-		fps_label.text = "%d fps  %.1f ms" % [Engine.get_frames_per_second(), delta * 1000.0]
+
+
+## Shown signal (percent) drained per second right now: the real drain rate
+## through the false scale's slope, so it matches what the bar does.
+func _drain_shown(s: Dictionary) -> float:
+	if not bool(s.get("started", false)) or mode == GameState.Mode.GHOST:
+		return 0.0
+	var f := float(s.get("signal", 1.0))
+	var rate := rules.drain_rate(int(s.get("elapsed_ms", 0))) / rules.signal_max
+	var c := rules.display_curve
+	var slope := 1.0 if c <= 0.0 else c * exp(c * f) / (exp(c) - 1.0)
+	return 100.0 * rate * slope
 
 
 # --- results -> visuals ---------------------------------------------------------
 
 func _apply(r: Dictionary) -> void:
 	var res: MoveResult = r.res
+	var before := int(state.get("score", 0))
 	for k in r.state:
 		state[k] = r.state[k]
 	match res.kind:
@@ -212,6 +232,8 @@ func _apply(r: Dictionary) -> void:
 		if res.hits.is_empty():
 			sfx.play("link")
 	_links = links
+	if not r.state.has("cells"):
+		_cards_for(before, int(state.get("score", 0)))
 	if bool(state.get("over", false)) and not over:
 		over = true
 		_game_over(r.state.get("reveal", {}))
@@ -225,26 +247,59 @@ func _show_reveal(res: MoveResult) -> void:
 		origin = state.get("origin", Vector2i.ZERO)
 		hud.origin = origin
 		hud.minimap.origin = origin
+		lattice.origin = origin
+		lattice.on = true
 	var now := board.clock_ms
+	var safe := 0
+	for n in res.numbers:
+		if n >= 0:
+			safe += 1
+	var trails := safe >= Motion.TRAIL_MIN_CELLS and not settings.reduced_motion
+	var budget := AfterimageLayer.CAPACITY / Motion.ECHO_DELAYS.size()
+	var last := now
 	for i in res.revealed.size():
 		var c: Vector2i = res.revealed[i]
 		var n: int = res.numbers[i]
 		if n < 0:
 			board.set_cell(c, BoardView.HIT, 0, now)
 			hud.minimap.mark(c, 3)
+			continue
+		var at := now + ring_delay(c, res.cell, settings.reduced_motion)
+		board.set_cell(c, BoardView.OPEN, n, at)
+		hud.minimap.mark(c, 1 if n > 0 else 0)
+		if trails and budget > 0:
+			afterimages.spawn(c, at, res.cell)
+			budget -= 1
+		last = maxf(last, at)
+	if res.hits.is_empty():
+		# No popup text on a mine hit, even when a chord also opened numbers.
+		var pop := PopupLayer.for_move(res.revealed, res.numbers, palette)
+		if not pop.is_empty():
+			popups.add(pop[0], res.cell if res.kind == MoveResult.Kind.REVEAL else res.revealed[0], pop[1], last)
+		if res.revealed.size() > 1:
+			sfx.play("cascade")
 		else:
-			board.set_cell(c, BoardView.OPEN, n, now + res.rings[i] * RING_MS)
-			hud.minimap.mark(c, 1 if n > 0 else 0)
-	var pop := PopupLayer.for_move(res.revealed, res.numbers, palette)
-	if not pop.is_empty():
-		popups.add(pop[0], res.cell if res.kind == MoveResult.Kind.REVEAL else res.revealed[0], pop[1])
-	if not res.hits.is_empty():
-		_aberration_start = board.clock_ms
-		sfx.play("hit")
-	elif res.revealed.size() > 1:
-		sfx.play("cascade")
+			sfx.play("reveal", 0.9 + 0.05 * res.numbers[0])
 	else:
-		sfx.play("reveal", 0.9 + 0.05 * res.numbers[0])
+		_mine_hit()
+
+
+## When a cascade cell reveals: rings by rounded straight-line distance from
+## the click, 22 ms apart, so the wavefront is round (instant with reduce motion).
+static func ring_delay(c: Vector2i, click: Vector2i, reduced: bool) -> float:
+	if reduced:
+		return 0.0
+	return roundf(Vector2(c - click).length()) * Motion.RING_MS
+
+
+## The hazard tile slams in on the board; the screen takes the hit: a danger
+## flash, three tear lines and the shake (design/MOTION.md 6). The link block
+## shatters in the HUD.
+func _mine_hit() -> void:
+	if fx.guard.allow(fx.clock_ms):
+		fx.flash(palette.c("danger"), 0.22, Motion.HIT_FLASH_MS, false)
+		fx.tear(3, Motion.HIT_TEAR_MS, 6.0, 40.0, false)
+	sfx.play("hit")
 
 
 ## Everything visible at once, settled (screenshots, bots joining).
@@ -263,6 +318,35 @@ func _show_all(s: Dictionary) -> void:
 		origin = s.get("origin", Vector2i.ZERO)
 		hud.origin = origin
 		hud.minimap.origin = origin
+		lattice.origin = origin
+		lattice.on = true
+
+
+## RIVAL DOWN the moment the live score passes a rival's (Arcade only, once
+## per rival; passing two at once shows one card), NEW BEST once per run when
+## it passes the best so far. They queue and never take input.
+func _cards_for(before: int, now: int) -> void:
+	if now <= before or over:
+		return
+	for spec in cards_between(before, now):
+		fx.cards.play(spec)
+
+
+func cards_between(before: int, now: int) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if mode == GameState.Mode.ARCADE:
+		var passed: Dictionary = {}
+		for r in _rivals:
+			if before <= int(r.score) and now > int(r.score) and not _beaten.has(r.name):
+				_beaten[r.name] = true
+				passed = r
+		if not passed.is_empty():
+			out.append({"text": "RIVAL DOWN", "jp": "撃破", "sub": "%s %s" % [passed.name, HudText.thousands(int(passed.score))],
+				"role": "accent"})
+	if best_before > 0 and not _best_shown and before <= best_before and now > best_before:
+		_best_shown = true
+		out.append({"text": "NEW BEST", "jp": "記録更新", "sub": HudText.thousands(now), "role": "accent2"})
+	return out
 
 
 func _game_over(pm: Dictionary) -> void:
@@ -270,14 +354,15 @@ func _game_over(pm: Dictionary) -> void:
 		board.set_cell(c, BoardView.MINE_SHOWN, 0, -1.0, false)
 	for c in pm.get("wrong_flags", []):
 		board.set_cell(c, BoardView.WRONG_FLAG, 0, -1.0, false)
-	var secs := int(state.get("elapsed_ms", 0)) / 1000
-	var depth := int(state.get("deepest", 0))
-	var t := "%d:%02d" % [secs / 60, secs % 60]
-	if bool(state.get("ended", false)):
-		overlay.show_end("Run banked", "Ghost run ended at depth %d after %s." % [depth, t], int(state.score))
-	else:
-		overlay.show_end("Link severed", "All three links lost at depth %d, %s in." % [depth, t], int(state.score))
 	sfx.play("end")
+	run_over.emit(summary())
+
+
+func summary() -> Dictionary:
+	return {"score": int(state.get("score", 0)), "depth": int(state.get("deepest", 0)),
+		"elapsed_ms": int(state.get("elapsed_ms", 0)), "tiles": int(state.get("tiles", 0)),
+		"ended": bool(state.get("ended", false)), "mode": mode, "seed": int(state.get("seed", 0)),
+		"best_before": best_before}
 
 
 # --- input --------------------------------------------------------------------
@@ -322,35 +407,12 @@ func _gui_input(event: InputEvent) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var k := event as InputEventKey
-	if k == null or not k.pressed or k.echo:
+	if k == null or not k.pressed or k.echo or not is_visible_in_tree():
 		return
 	match k.keycode:
-		KEY_R:
-			if over:
-				new_run(-1, mode)
-		KEY_F11:
-			var w := get_window()
-			w.mode = Window.MODE_WINDOWED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
-		KEY_F3:
-			settings.show_fps = not settings.show_fps
-			apply_settings()
-		KEY_F2:
-			# Dev key until the palettes screen (milestone 4): cycle palettes.
-			var all := Palette.load_all()
-			var i := all.find(palette)
-			apply_palette(all[(i + 1) % all.size()])
-		KEY_F6:
-			settings.scanlines = not settings.scanlines
-			apply_settings()
-		KEY_F7:
-			settings.reduced_motion = not settings.reduced_motion
-			apply_settings()
 		KEY_F8:
 			# Dev key until the mode picker (milestone 4): switch mode, new run.
 			new_run(-1, GameState.Mode.GHOST if mode == GameState.Mode.ARCADE else GameState.Mode.ARCADE)
-		KEY_M:
-			settings.sfx = not settings.sfx
-			apply_settings()
 		KEY_E:
 			# Ghost mode's End run (milestone 4 moves it into the pause menu).
 			if k.ctrl_pressed and mode == GameState.Mode.GHOST and started and not over:
@@ -377,6 +439,8 @@ func _flag(c: Vector2i) -> void:
 
 
 func _pan_keys(delta: float) -> void:
+	if not is_visible_in_tree():
+		return
 	var v := Vector2.ZERO
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
 		v.x -= 1
@@ -407,34 +471,47 @@ func _shake(scale: float) -> void:
 
 
 func _update_effects() -> void:
-	var t := board.clock_ms - _shake_start
-	if t < SHAKE_MS:
-		var amp := SHAKE_PX * _shake_scale * (1.0 - t / SHAKE_MS)
+	if not is_visible_in_tree():
+		return
+	var now := board.clock_ms
+	var t := now - _shake_start
+	if t < Motion.SHAKE_MS:
+		var amp := Motion.SHAKE_PX * _shake_scale * (1.0 - t / Motion.SHAKE_MS)
 		world.position = Vector2(_rng.randf_range(-amp, amp), _rng.randf_range(-amp, amp))
 	else:
 		world.position = Vector2.ZERO
-	var pm := post.material as ShaderMaterial
-	var at := board.clock_ms - _aberration_start
-	var ab := 0.0
-	if at < ABERRATION_MS:
-		ab = 6.0 * (1.0 - at / ABERRATION_MS) * (0.5 if settings.reduced_motion else 1.0)
-	pm.set_shader_parameter("aberration", ab)
+	var reduced := settings.reduced_motion
+	var shown := float(state.get("signal_shown", 1.0))
+	strain = Strain.level(int(state.get("links", 3)), shown, mode, started and not over)
+	hud.strain = strain
+	# Strain 2 jitters the deck, never the board.
+	hud.position = Strain.jitter(strain, now, reduced)
+	fx.strain_level = strain
+	fx.strain_a = Strain.pulse(strain, now, reduced)
 	var low := hud.low_signal and mode == GameState.Mode.ARCADE
-	pm.set_shader_parameter("scan_boost", 0.6 if low else 0.0)
+	fx.scan_boost = 1.0 if strain >= 2 else (0.6 if low else 0.0)
+	# Below the low mark and before strain: the faint 1 Hz red edge.
 	var alarm := 0.0
-	if low:
-		alarm = Hud.alarm_level(float(state.get("signal_shown", 1.0)), board.clock_ms, rules.low_fraction,
-			rules.critical_fraction, settings.reduced_motion)
+	if low and strain == 0:
+		alarm = Hud.alarm_level(shown, now, rules.low_fraction, rules.critical_fraction, reduced)
 	(vignette.material as ShaderMaterial).set_shader_parameter("alarm", alarm)
-	if low:
-		sfx.low(board.clock_ms)
+	if strain >= 2:
+		if not reduced and now >= _next_tear:
+			fx.tear(1, Motion.STRAIN_TEAR_MS, 4.0, 26.0)
+			_next_tear = now + Motion.TEAR_EVERY_MS
+		if now >= _next_thump:
+			sfx.play("heartbeat")
+			_next_thump = now + 500.0
+	elif low:
+		sfx.low(now)
 
 
 # --- screenshots ----------------------------------------------------------------
 
 ## Plays a seeded bot run synchronously, frames it and saves a PNG, then quits.
 ## Options: shot (path), seed, bot, turns, zoom, palette, mode, center "x,y",
-## hover "x,y" or "auto", pop.
+## hover "x,y" or "auto", pop, signal (shown fraction), links, hit (a fresh
+## mine hit at ms into it), cascade (ms into a fresh cascade).
 func screenshot(args: Dictionary) -> void:
 	if not atlas.is_built:
 		await atlas.built
@@ -444,6 +521,8 @@ func screenshot(args: Dictionary) -> void:
 	session = Session.new(int(args.get("seed", "7")), rules, false, m)
 	mode = m
 	hud.mode = m
+	clock_paused = true
+	board.clock_ms = 20000.0   # so "ms ago" timestamps below stay positive
 	session.bot(args.get("bot", "netrunner"), int(args.get("turns", "400")), Vector2i.ZERO)
 	for r in session.poll():
 		_apply(r)
@@ -455,21 +534,30 @@ func screenshot(args: Dictionary) -> void:
 		board.cam.center = Vector2(state.get("last", origin)) + Vector2(0.5, 0.5)
 	cursor.show = false
 	if args.has("signal"):
-		# Show the HUD and vignette as they look at this displayed signal level.
 		state["signal_shown"] = float(args.signal)
-		hud.state = state
-		set_process(false)
-		hud.low_signal = float(args.signal) < rules.low_fraction
-		(vignette.material as ShaderMaterial).set_shader_parameter("alarm",
-			Hud.alarm_level(float(args.signal), 0.0, rules.low_fraction, rules.critical_fraction, false))
+	if args.has("links"):
+		state["links"] = int(args.links)
+		_links = int(args.links)
+		hud.lost_at = [-1e9, -1e9, -1e9]
+	if args.has("score"):
+		state["score"] = int(args.score)
+	hud.state = state
 	if args.get("hover", "auto") == "auto":
 		_auto_hover()
 	if args.has("pop"):
 		var c := board.cam.cell_at(board.cam.view_size * 0.5)
 		popups.add("+3", c, palette.number(3))
+	board.freeze = true
+	fx.freeze = true
+	if args.has("hit"):
+		var c := _frontier_cell()
+		board.set_cell(c, BoardView.HIT, 0, board.clock_ms - float(args.hit))
+	if args.has("cascade"):
+		_fake_cascade(float(args.cascade))
 	for i in int(args.get("frames", "6")):
 		await RenderingServer.frame_post_draw
 	set_process(false)
+	_update_effects_frozen(args)
 	board.hover_on = args.get("hover", "auto") != "none"
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -478,6 +566,53 @@ func screenshot(args: Dictionary) -> void:
 	print("saved ", args.shot, " ", img.get_size())
 	session.close()
 	get_tree().quit()
+
+
+## Applies strain and the alarm as they look at the pinned clock.
+func _update_effects_frozen(args: Dictionary) -> void:
+	var now := float(args.get("at-ms", "0"))
+	board.clock_ms = maxf(board.clock_ms, 0.0)
+	var shown := float(state.get("signal_shown", 1.0))
+	strain = Strain.level(int(state.get("links", 3)), shown, mode, true)
+	hud.strain = strain
+	hud.low_signal = shown < rules.low_fraction
+	fx.strain_level = strain
+	fx.strain_a = Strain.pulse(strain, now, false)
+	fx.scan_boost = 1.0 if strain >= 2 else (0.6 if hud.low_signal else 0.0)
+	var alarm := 0.0
+	if hud.low_signal and strain == 0:
+		alarm = Hud.alarm_level(shown, now, rules.low_fraction, rules.critical_fraction, false)
+	(vignette.material as ShaderMaterial).set_shader_parameter("alarm", alarm)
+	if not args.has("tear"):
+		fx._tears.clear()
+	if strain > 0:
+		# Show a label mid-corruption, like the mockup.
+		hud._process(0.0)
+		for id in ["drain", "rival", "position", "depth", "density", "time"]:
+			if hud._seen.has(id):
+				hud._corrupt[id] = [Strain.corrupt(hud._seen[id], _rng), 1e12]
+	hud.refresh()
+
+
+## A hidden cell next to the open area, near the middle of the view.
+func _frontier_cell() -> Vector2i:
+	_auto_hover()
+	return board.hover
+
+
+## A fresh cascade, frozen ms into its ring wave: a disc of zeros around the
+## view centre, revealed ring by ring with afterimages.
+func _fake_cascade(ms: float) -> void:
+	var mid := board.cam.cell_at(board.cam.view_size * 0.5) + Vector2i(8, -2)
+	var now := board.clock_ms - ms
+	for dy in range(-6, 7):
+		for dx in range(-6, 7):
+			var c := mid + Vector2i(dx, dy)
+			if Vector2(dx, dy).length() > 6.2:
+				continue
+			var at := now + ring_delay(c, mid, false)
+			board.set_cell(c, BoardView.OPEN, 1 if Vector2(dx, dy).length() > 5.4 else 0, at)
+			afterimages.spawn(c, at, mid)
 
 
 ## Hovers the hidden frontier cell nearest the centre of the view.

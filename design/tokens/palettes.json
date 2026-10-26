@@ -1,5 +1,5 @@
 {
-  "_about": "CyberSweeper palette tokens. Source of truth for every color in the game, the mockups and the download page. Unlock thresholds are placeholders until the bot simulations (milestone 2) set real numbers.",
+  "_about": "CyberSweeper palette tokens. Source of truth for every color in the game, the mockups and the download page. Unlock thresholds mirror game/data/unlocks.json as of milestone 3.",
   "roles": {
     "void": "Background behind and beyond the board; the infinite dark the board fades into",
     "floor": "Revealed (decrypted) cell fill",
@@ -88,8 +88,8 @@
       "default": false,
       "unlock": {
         "type": "total_tiles",
-        "value": 10000,
-        "text": "Decrypt 10,000 tiles across all runs"
+        "value": 25000,
+        "text": "Decrypt 25,000 tiles across all runs"
       },
       "vibe": "Phosphor terminal. Greens for low numbers, heating to amber and red as danger rises.",
       "colors": {
@@ -123,8 +123,8 @@
       "default": false,
       "unlock": {
         "type": "depth",
-        "value": 300,
-        "text": "Reach depth 300 in one run"
+        "value": 120,
+        "text": "Reach depth 120 in one run"
       },
       "vibe": "Sodium streetlight amber, oxidized teal, burnt-orange hazards.",
       "colors": {

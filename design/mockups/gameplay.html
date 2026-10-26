@@ -4,115 +4,22 @@
 <meta charset="utf-8">
 <title>CyberSweeper — gameplay</title>
 <link rel="stylesheet" href="../shared/cs.css">
-<style>
-  .hud-tl { top: 28px; left: 28px; padding: 18px 22px 18px 22px; display: grid; gap: 14px; }
-  .hud-tl .wordmark { font-size: 22px; }
-  .hud-tl .row { display: flex; align-items: center; gap: 16px; }
-  .hud-tl .seed { font-family: var(--f-data); font-size: 12px; color: var(--ink-dim); }
-
-  .hud-sig { top: 28px; left: 50%; transform: translateX(-50%); width: 620px; padding: 14px 20px 16px; }
-  .hud-sig .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
-  .hud-sig .pct { font-family: var(--f-data); font-weight: 600; font-size: 15px; color: var(--accent); }
-
-  .hud-score { top: 28px; right: 28px; padding: 14px 24px 16px; text-align: right; min-width: 300px; }
-  .hud-score .big { font-family: var(--f-data); font-weight: 800; font-size: 56px; line-height: 1.05; color: var(--ink); text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent); }
-  .hud-score .rival { margin-top: 8px; display: grid; gap: 6px; }
-  .hud-score .rival .lbl b { color: var(--ink); font-weight: 600; }
-  .hud-score .bar { height: 4px; background: color-mix(in srgb, var(--accent2) 18%, transparent); }
-  .hud-score .bar i { display: block; height: 100%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
-
-  .hud-bl { bottom: 28px; left: 28px; padding: 14px 22px; display: grid; grid-template-columns: auto auto; gap: 4px 28px; }
-  .hud-bl .v { font-family: var(--f-data); font-weight: 600; font-size: 16px; color: var(--ink); }
-
-  .hud-mm { bottom: 28px; right: 28px; padding: 12px; }
-  .hud-mm canvas { width: 260px; height: auto; image-rendering: pixelated; }
-  .hud-mm .lbl { display: flex; justify-content: space-between; margin-bottom: 8px; }
-
-  .hints { bottom: 28px; left: 50%; transform: translateX(-50%); display: flex; gap: 26px; padding: 12px 22px; color: var(--ink-dim); font-size: 15px; font-weight: 500; }
-  .hints span { display: inline-flex; gap: 8px; align-items: center; }
-
-  .cursor { position: absolute; z-index: 30; width: 30px; height: 30px; color: var(--accent); filter: drop-shadow(0 0 4px var(--accent)); pointer-events: none; }
-</style>
+<link rel="stylesheet" href="../shared/screens.css">
 </head>
 <body>
-<div class="screen fx-scanlines fx-vignette" id="screen">
-  <div class="board-viewport" id="vp"></div>
-
-  <div class="panel hud-tl">
-    <div class="row"><span class="wordmark">CYBERSWEEPER</span><span class="seed" id="seed"></span></div>
-    <div class="row"><span class="lbl">links</span><div class="links"><i class="link"></i><i class="link"></i><i class="link lost"></i></div></div>
-  </div>
-
-  <div class="panel hud-sig">
-    <div class="top"><span class="lbl">signal</span><span class="pct">72%</span></div>
-    <div class="meter" id="meter"></div>
-  </div>
-
-  <div class="panel hud-score">
-    <div class="lbl">score</div>
-    <div class="big" id="score"></div>
-    <div class="rival">
-      <div class="lbl" id="rival"></div>
-      <div class="bar"><i id="rivalbar"></i></div>
-    </div>
-  </div>
-
-  <div class="panel hud-bl">
-    <span class="lbl">position</span><span class="lbl">depth</span>
-    <span class="v" id="pos"></span><span class="v" id="depth"></span>
-    <span class="lbl" style="margin-top:8px">mine density</span><span class="lbl" style="margin-top:8px">time</span>
-    <span class="v">18.4%</span><span class="v">06:12</span>
-  </div>
-
-  <div class="panel hints">
-    <span><span class="kbd">LMB</span> reveal</span>
-    <span><span class="kbd">RMB</span> flag</span>
-    <span><span class="kbd">LMB</span> on a number to chord</span>
-    <span><span class="kbd">WASD</span> or drag to pan</span>
-    <span><span class="kbd">wheel</span> zoom</span>
-  </div>
-
-  <div class="panel hud-mm">
-    <div class="lbl"><span>explored</span><span class="num" id="tiles"></span></div>
-    <canvas id="mm"></canvas>
-  </div>
-
-  <svg class="cursor" id="cursor" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M2 9V2h7M21 2h7v7M28 21v7h-7M9 28H2v-7"/><path d="M15 11v8M11 15h8" stroke-width="1.5"/>
-  </svg>
-</div>
+<!-- Gameplay v2: corporate-clean board (TETSUKAGE secure lattice) under a street-deck HUD.
+     Params: ?palette=<id>  &links=1..3  &signal=0..100  &strain=0|1|2 -->
+<div id="screen"></div>
 <script src="../shared/board.js"></script>
+<script src="../shared/fx.js"></script>
+<script src="../shared/screens.js"></script>
 <script>
   CS.applyPalette(); CS.injectGlyphs();
-  const st = CS.makeBoard({
-    W: 150, H: 100, seed: 731, density: 0.17, start: [40, 62],
-    blobs: [{ x: 40, y: 62, r: 12 }, { x: 56, y: 55, r: 13 }, { x: 72, y: 49, r: 12 }, { x: 86, y: 43, r: 11 }, { x: 95, y: 50, r: 8 }],
-    noise: 0.75, flagRate: 0.92, frontierFlagRate: 0.45, hits: [[97, 44]]
-  });
-  const view = { x0: 79, y0: 30, cols: 47, rows: 27, px: -18, py: -10 };
-  const target = CS.frontierSafe(st, 101, 41);
-  const three = CS.revealedNumberNear(st, 96, 52, 3) || CS.revealedNumberNear(st, 96, 52, 2);
-  const fresh = [], fresh2 = [];
-  if (three) for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) (Math.max(Math.abs(dx), Math.abs(dy)) <= 1 ? fresh : fresh2).push([three[0] + dx, three[1] + dy]);
-  const vp = document.getElementById("vp");
-  const r = CS.render(vp, st, view, {
-    hover: target, fresh, fresh2,
-    pops: three ? [{ x: three[0], y: three[1], text: "+" + st.num[three[1] * st.W + three[0]], n: st.num[three[1] * st.W + three[0]], dx: 30, dy: -22 }] : []
-  });
-  if (target) { const [px, py] = r.cellToPx(...target); const c = document.getElementById("cursor"); c.style.left = (px + 22) + "px"; c.style.top = (py + 24) + "px"; }
-  const s = st.stats.score;
-  document.getElementById("score").textContent = CS.fmt(s);
-  const rivals = [["script.kitty", 640], ["mx_halcyon", 2180], ["NULL//SAINT", 5960]];
-  const next = rivals.find((x) => x[1] > s) || rivals[2];
-  document.getElementById("rival").innerHTML = `next rival <b>${next[0]}</b> <span class="num">${CS.fmt(next[1])}</span>`;
-  document.getElementById("rivalbar").style.width = Math.min(100, s / next[1] * 100) + "%";
-  document.getElementById("seed").textContent = "seed 7F3A-91C2";
-  const cx = view.x0 + view.cols / 2 - st.start[0], cy = view.y0 + view.rows / 2 - st.start[1];
-  document.getElementById("pos").textContent = `x ${Math.round(cx)}  y ${-Math.round(cy)}`;
-  document.getElementById("depth").textContent = Math.round(Math.hypot(cx, cy));
-  document.getElementById("tiles").textContent = CS.fmt(st.stats.tiles);
-  document.getElementById("meter").innerHTML = Array.from({ length: 40 }, (_, i) => `<i class="${i < 29 ? "on" : ""}"></i>`).join("");
-  CS.minimap(document.getElementById("mm"), st, view, 2);
+  const q = new URLSearchParams(location.search);
+  const links = +(q.get("links") ?? 2), signal = +(q.get("signal") ?? 72);
+  const strain = q.has("strain") ? +q.get("strain") : (links <= 1 ? 1 : 0) + (signal < 10 ? 1 : 0);
+  CS.buildGame(document.getElementById("screen"), { links, signal, strain });
+  FX.tickers(document);
 </script>
 </body>
 </html>

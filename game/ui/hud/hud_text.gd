@@ -28,6 +28,56 @@ static func draw_split_string(ci: CanvasItem, font: Font, pos: Vector2, text: St
 	ci.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, ink)
 
 
+## Text that may contain strain corruption glyphs. ▓▒░█▚▞ΞΣ aren't in the
+## bundled fonts (and the OS fallback differs per platform), so those are
+## drawn as shapes in a digit-wide box; everything else is the font's own.
+## Returns the advance.
+static func draw_glitch_string(ci: CanvasItem, font: Font, pos: Vector2, text: String, size: int,
+		color: Color) -> float:
+	var adv := font.get_char_size("0".unicode_at(0), size).x
+	var cap := size * 0.72
+	var x := pos.x
+	for ch in text:
+		if SHAPES.contains(ch):
+			_shape(ci, ch, Rect2(x + adv * 0.08, pos.y - cap, adv * 0.84, cap), color)
+			x += adv
+		else:
+			ci.draw_char(font, Vector2(x, pos.y), ch, size, color)
+			x += font.get_char_size(ch.unicode_at(0), size).x
+	return x - pos.x
+
+
+const SHAPES := "▓▒░█▚▞ΞΣ"
+
+
+static func _shape(ci: CanvasItem, ch: String, r: Rect2, color: Color) -> void:
+	var hw := r.size * 0.5
+	match ch:
+		"█":
+			ci.draw_rect(r, color)
+		"▓":
+			ci.draw_rect(r, Color(color, color.a * 0.75))
+		"▒":
+			ci.draw_rect(r, Color(color, color.a * 0.5))
+		"░":
+			ci.draw_rect(r, Color(color, color.a * 0.25))
+		"▚":
+			ci.draw_rect(Rect2(r.position, hw), color)
+			ci.draw_rect(Rect2(r.position + hw, hw), color)
+		"▞":
+			ci.draw_rect(Rect2(r.position + Vector2(hw.x, 0), hw), color)
+			ci.draw_rect(Rect2(r.position + Vector2(0, hw.y), hw), color)
+		"Ξ":
+			var t := maxf(1.0, r.size.y * 0.14)
+			for f in [0.0, 0.5, 1.0]:
+				ci.draw_rect(Rect2(r.position.x, r.position.y + (r.size.y - t) * f, r.size.x, t), color)
+		"Σ":
+			var t := maxf(1.0, r.size.y * 0.14)
+			ci.draw_polyline(PackedVector2Array([r.position + Vector2(r.size.x, t * 0.5), r.position + Vector2(0, t * 0.5),
+				r.position + Vector2(r.size.x * 0.55, r.size.y * 0.5), r.position + Vector2(0, r.size.y - t * 0.5),
+				r.position + Vector2(r.size.x, r.size.y - t * 0.5)]), color, t)
+
+
 static func width(font: Font, text: String, size: int) -> float:
 	return font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 

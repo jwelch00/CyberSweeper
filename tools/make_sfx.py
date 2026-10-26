@@ -101,6 +101,15 @@ def main() -> None:
                     tone(900, 900, 0.07, "square", 0.09, decay=0.04), at=[0.0, 0.09]))
     save("end", mix(*[tone(f, f * 0.99, 0.3, "saw", 0.2, attack=0.005, decay=0.12) for f in (440, 349, 262)],
                     at=[0.0, 0.16, 0.32]))
+    # Motion pass (design/MOTION.md). Generated after the others so the
+    # earlier files come out byte-identical.
+    save("heartbeat", mix(tone(70, 42, 0.16, "sine", 0.7, attack=0.004, decay=0.05),
+                          tone(62, 38, 0.14, "sine", 0.45, attack=0.004, decay=0.045), at=[0.0, 0.17]))
+    save("denied", crush(mix(tone(110, 104, 0.24, "square", 0.22, attack=0.003, decay=0.12),
+                             tone(165, 156, 0.24, "saw", 0.12, attack=0.003, decay=0.12)), bits=5, hold=3))
+    save("accepted", mix(tone(880, 880, 0.05, "sine", 0.25, decay=0.03),
+                         tone(1320, 1320, 0.09, "sine", 0.25, decay=0.05), at=[0.0, 0.055]))
+    save("slam", mix(noise(0.16, 0.3, 0.05, hp=0.6), tone(95, 50, 0.18, "sine", 0.55, decay=0.07)))
 
 
 if __name__ == "__main__":

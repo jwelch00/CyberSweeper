@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>CyberSweeper — components</title>
 <link rel="stylesheet" href="../shared/cs.css">
+<link rel="stylesheet" href="../shared/screens.css">
 <style>
   body { width: 1920px; }
   .page { padding: 90px 120px 120px; }
@@ -65,7 +66,7 @@
 
   <section>
     <h2>HUD pieces</h2>
-    <p>Links are your lives. Signal drains over time and refills as you reveal cells; it shifts to warning below 30% and critical below 10%.</p>
+    <p>Links are your lives, drawn as chunky memory blocks with a cut corner. Signal is a big readout plus a slanted bar whose empty part is hatched; it shifts to warning below 30% and critical below 10%. All HUD panels use the jagged frame from screens.js (CS.jag).</p>
     <div class="hud">
       <div class="hcard">
         <h3>Links</h3>
@@ -74,11 +75,11 @@
         <div class="hrow"><span class="lbl">Last link</span><div class="links"><i class="link pulse"></i><i class="link lost"></i><i class="link lost"></i></div></div>
       </div>
       <div class="hcard">
-        <h3>Signal</h3>
-        <div class="meterbox"><div class="top"><span class="lbl">signal</span><span class="pct">100%</span></div><div class="meter" data-on="40"></div></div>
-        <div class="meterbox"><div class="top"><span class="lbl">signal</span><span class="pct">72%</span></div><div class="meter" data-on="29"></div></div>
-        <div class="meterbox" style="--mc: var(--warn)"><div class="top"><span class="lbl">signal low</span><span class="pct">28%</span></div><div class="meter low" data-on="11"></div></div>
-        <div class="meterbox" style="--mc: var(--danger)"><div class="top"><span class="lbl">signal critical</span><span class="pct">8%</span></div><div class="meter crit" data-on="3"></div></div>
+        <h3>Signal (health-bar treatment)</h3>
+        <div class="sig" style=""><span class="read">100<small>%</small></span><div class="sigbar" style="--p:100%"><i></i></div><div class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+        <div class="sig" style=""><span class="read">72<small>%</small></span><div class="sigbar" style="--p:72%"><i></i></div><div class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div></div>
+        <div class="sig" style="--mc:var(--warn)"><span class="read">28<small>%</small></span><div class="sigbar" style="--p:28%"><i></i></div><div class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div></div>
+        <div class="sig" style="--mc:var(--danger)"><span class="read">8<small>%</small></span><div class="sigbar" style="--p:8%"><i></i></div><div class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div></div>
       </div>
       <div class="hcard">
         <h3>Buttons and feedback</h3>
@@ -146,7 +147,7 @@
     ...[1, 2, 3, 4, 5, 6, 7, 8].map((n) => [cell("r", n, `data-n="${n}"`), `Revealed ${n}`, n === 1 ? "scores 1" : `scores ${n}`]),
     [cell("r fresh", 2, 'data-n="2"'), "Fresh reveal", "cascade flash"],
     [cell("h f", CS.svg("g-flag")), "Flag", "player opinion only"],
-    [cell("m hit", CS.svg("g-mine")), "Mine hit", "costs a link, stays"],
+    [cell("m hit", CS.svg("g-mine")), "Mine hit", "hazard stripes, stays"],
     [cell("m shown", CS.svg("g-mine")), "Mine", "shown at game over"],
     [cell("h f wrong", CS.svg("g-flag")), "Wrong flag", "shown at game over"],
   ];

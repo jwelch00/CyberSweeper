@@ -96,6 +96,64 @@ vec2 box_uv(vec2 p, vec2 centre, float box) {
 	return (p - centre) / box + 0.5;
 }
 
+// CSS cubic-bezier(x1, y1, x2, y2) at t (bisection; only used for a few cells).
+float bez(float x1, float y1, float x2, float y2, float t) {
+	float lo = 0.0, hi = 1.0, u = t;
+	for (int i = 0; i < 14; i++) {
+		u = (lo + hi) * 0.5;
+		float v = 1.0 - u;
+		float x = 3.0 * v * v * u * x1 + 3.0 * v * u * u * x2 + u * u * u;
+		if (x < t) lo = u; else hi = u;
+	}
+	float v = 1.0 - u;
+	return 3.0 * v * v * u * y1 + 3.0 * v * u * u * y2 + u * u * u;
+}
+
+// The mine hit as the corp's hazard tile (design/shared/cs.css .c.m.hit):
+// diagonal warn/void stripes, a 1 px danger edge, a void octagon inset 18%
+// holding the mine in danger with a 1 px accent2/accent split. It slams in
+// (scale 1.35 -> 1, brightness 3 -> 1 over 120 ms with overshoot) and the
+// stripes march for 1.2 s. q is relative to the hit cell's chip; alpha 0 =
+// not on the tile.
+vec4 hazard(vec2 q, float cs, float age) {
+	float sc = 1.0;
+	float bright = 1.0;
+	bool fresh = age >= 0.0 && age < 1e5 && motion > 0.5;
+	if (fresh && age < 120.0) {
+		float e = bez(0.2, 1.5, 0.4, 1.0, age / 120.0);
+		sc = mix(1.35, 1.0, e);
+		bright = mix(3.0, 1.0, e);
+	}
+	vec2 mid = vec2(cs * 0.5);
+	vec2 p = mid + (q - mid) / sc;
+	if (p.x < 0.0 || p.y < 0.0 || p.x > cs || p.y > cs) return vec4(0.0);
+	float period = 10.0 * zoom;
+	float march = fresh && age < 1200.0 ? age / 600.0 : 0.0;
+	float d = fract((p.x + p.y) * 0.70710678 / period + march);
+	float aa = 0.8 / period;
+	float on = smoothstep(0.0, aa, d) * (1.0 - smoothstep(0.5 - aa, 0.5, d));
+	vec3 dark = mix(c_void.rgb, c_warn.rgb, 0.08);
+	vec3 col = mix(dark, c_warn.rgb, on);
+	float e = min(min(p.x, p.y), min(cs - p.x, cs - p.y));
+	if (e < max(1.0, zoom)) col = c_danger.rgb;
+	// void octagon, inset 18%, corners cut at 22% of its side
+	vec2 o = (p - vec2(0.18 * cs)) / (0.64 * cs);
+	if (o.x >= 0.0 && o.y >= 0.0 && o.x <= 1.0 && o.y <= 1.0) {
+		vec2 m = min(o, 1.0 - o);
+		if (m.x + m.y >= 0.22) {
+			col = c_void.rgb;
+			float box = 0.52 * cs * SHAPE_BOX;
+			vec2 uv = box_uv(p, mid, box);
+			float sh = zoom / box;
+			col = mix(col, c_accent2.rgb, atlas(glyphs, 1.0, 3.0, uv + vec2(sh, 0.0)) * 0.9);
+			col = mix(col, c_accent.rgb, atlas(glyphs, 1.0, 3.0, uv - vec2(sh, 0.0)) * 0.9);
+			col = mix(col, c_danger.rgb, atlas(glyphs, 1.0, 3.0, uv));
+			col = mix(col, c_void.rgb, atlas(glyphs, 2.0, 3.0, uv));
+		}
+	}
+	return vec4(min(col * bright, vec3(1.0)), 1.0);
+}
+
 // Is a revealed (floor) cell within `spread` px of point lp (local to cell c)?
 bool floor_near(vec2 c, vec2 lp, float cs, float pitch, vec2 off, float spread) {
 	vec4 d = cell_data(c + off);
@@ -137,15 +195,13 @@ void fragment() {
 		}
 	} else if (open_here) {
 		col = c_floor.rgb;
-		// fresh reveal: the floor flashes toward accent, then settles
-		if (st == OPEN && age < 600.0) {
-			col = mix(col, c_accent.rgb, 0.22 * exp(-age / 220.0) * mix(0.5, 1.0, motion));
+		// fresh reveal: the floor flashes from 45% accent back to floor over 260 ms
+		if (st == OPEN && age >= 0.0 && age < 260.0) {
+			col = mix(col, c_accent.rgb, 0.45 * (1.0 - age / 260.0) * mix(0.5, 1.0, motion));
 		}
-		if (st == HIT) col = mix(c_floor.rgb, c_danger.rgb, 0.30);
 		// inset hairline
 		float e = min(min(lp.x, lp.y), min(cs - lp.x, cs - lp.y));
-		vec3 line = st == HIT ? c_danger.rgb : mix(c_floor.rgb, c_grid.rgb, 0.7);
-		if (e < 1.0) col = line;
+		if (e < 1.0) col = mix(c_floor.rgb, c_grid.rgb, 0.7);
 	}
 
 	// --- hidden chip ------------------------------------------------------------
@@ -214,9 +270,15 @@ void fragment() {
 					col = mix(col, nc, clamp(0.70 * gs * bloom, 0.0, 1.0));
 				}
 			} else if (ns == HIT) {
-				vec2 dd = max(max(-q, q - vec2(cs)), vec2(0.0));
-				float dist = length(dd);
-				if (dist > 0.0) col = mix(col, c_danger.rgb, 0.6 * exp(-dist / (7.0 * max(zoom, 0.5))));
+				vec4 hz = hazard(q, cs, nage);
+				if (hz.a > 0.0) {
+					col = hz.rgb;
+				} else {
+					// box-shadow: 0 0 18px danger at 55%
+					vec2 dd = max(max(-q, q - vec2(cs)), vec2(0.0));
+					float dist = length(dd);
+					if (dist > 0.0) col = mix(col, c_danger.rgb, 0.55 * exp(-dist / (6.0 * max(zoom, 0.5))));
+				}
 			}
 		}
 	}
@@ -242,24 +304,11 @@ void fragment() {
 			col = mix(col, nums[num - 1].rgb, a);
 		}
 	}
-	if (chip && (st == HIT || st == MINE_SHOWN)) {
+	if (chip && st == MINE_SHOWN) {
 		float box = 0.7 * cs * SHAPE_BOX;
 		vec2 uv = box_uv(lp, centre, box);
-		float a = atlas(glyphs, 1.0, 3.0, uv);
-		float hole = atlas(glyphs, 2.0, 3.0, uv);
-		if (st == HIT) {
-			float sh = 2.0 * zoom / box;
-			float left = atlas(glyphs, 1.0, 3.0, uv + vec2(sh, 0.0));
-			float right = atlas(glyphs, 1.0, 3.0, uv - vec2(sh, 0.0));
-			float g = atlas(glow_s, 1.0, 3.0, uv);
-			col = mix(col, c_danger.rgb, clamp(g * 0.9, 0.0, 1.0));
-			col = mix(col, c_accent2.rgb, left * 0.85);
-			col = mix(col, c_accent.rgb, right * 0.85);
-			col = mix(col, c_danger.rgb, a);
-		} else {
-			col = mix(col, c_ink_dim.rgb, a);
-		}
-		col = mix(col, c_void.rgb, hole);
+		col = mix(col, c_ink_dim.rgb, atlas(glyphs, 1.0, 3.0, uv));
+		col = mix(col, c_void.rgb, atlas(glyphs, 2.0, 3.0, uv));
 	}
 	if (chip && st == WRONG_FLAG) {
 		col = c_floor.rgb;

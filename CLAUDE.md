@@ -12,6 +12,7 @@ CyberSweeper is an infinite-board, no-guessing Minesweeper with a cyberpunk look
 - Keep `README.md` current: how to build, test and run, plus the exact Godot version.
 
 ## Hard rules
+- Gameplay stays pure minesweeper: no power-ups, no upgrades, no pickups or perks. Just the 3 links and the signal timer (see SPEC.md). Effects are feel, never rules.
 - No 50/50 guesses, ever (see SPEC.md). Flags never count as information. The property tests for this must pass before any milestone is called done.
 - The game makes zero network calls. No telemetry, no update checks, no online leaderboards.
 - All colors come from `design/tokens/palettes.json`. Don't hand-copy hex values.

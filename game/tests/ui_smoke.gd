@@ -1,7 +1,10 @@
 extends SceneTree
-## Plays the real gameplay screen with real input events (pushed through the
-## viewport, so HUD panels and routing are exercised) and checks that what the
-## board shows always matches the game. Runs headless in the test suites:
+## Plays the real screens with real input events (pushed through the viewport,
+## so routing, panels and buttons are exercised): the boot and its skip, the
+## title, a run with checks that what the board shows always matches the game,
+## mine hits and strain, LINK SEVERED, the game-over buttons, and Ghost mode.
+## The screen-effects clock is stepped by hand so cards and transitions are
+## deterministic. Runs headless in the test suites:
 ##   godot --headless --path game -s res://tests/ui_smoke.gd
 ## Under a display, `-- --shots DIR` also saves screenshots at key moments.
 
@@ -9,6 +12,7 @@ var _code := 3
 var _fails: Array[String] = []
 var _checks := 0
 var _shots := ""
+var flow: ScreenFlow
 var gv: GameView
 
 
@@ -33,19 +37,94 @@ func check(cond: bool, msg: String) -> void:
 
 func _run() -> void:
 	_code = 4   # running
-	gv = GameView.new()
-	root.add_child(gv)
-	gv.size = root.get_visible_rect().size
+	flow = ScreenFlow.new()
+	root.add_child(flow)
+	flow.size = root.get_visible_rect().size
+	gv = flow.game
+	flow.fx.freeze = true
 	if not gv.atlas.is_built:
 		await gv.atlas.built
 	await _frames(2)
+	await _boot()
+	await _reduced()
+	await _title()
 	await _arcade()
+	await _game_over()
 	await _ghost()
 	print("ui smoke: %d checks, %d failed" % [_checks, _fails.size()])
-	gv.queue_free()
+	flow.queue_free()
 	await _frames(2)
 	_code = 1 if not _fails.is_empty() else 0
 	quit(_code)
+
+
+## Steps the screen-effects clock (cards, datamosh, boot) by ms, a frame per step.
+func _advance(ms: float, step := 20.0) -> void:
+	var left := ms
+	while left > 0.0:
+		flow.fx.clock_ms += minf(step, left)
+		left -= step
+		await process_frame
+
+
+func _boot() -> void:
+	flow.start({"bootseed": "424242", "breach": "one"})
+	await _frames(1)
+	check(flow.current == flow.boot and flow.boot.visible, "launch shows the boot")
+	var b := flow.boot
+	check(b.plan.kind == "one" and b.plan.stalls.size() == 1, "a forced breach plays that variant")
+	var d: Dictionary = b.plan.segs[1]
+	await _advance(b.loader_at() + d.t0 + (d.t1 - d.t0) * 0.5 - b.elapsed())
+	check(b.plan.at(b.elapsed() - b.loader_at()).seg.get("denied", false), "the breach hits ACCESS DENIED")
+	await _shot("00-boot-denied")
+	await _advance(b.card_at() - b.elapsed() + 1.0)
+	await _frames(2)
+	check(flow.fx.cards.current_text() == "JACKED IN", "the boot ends on the JACKED IN card")
+	await _advance(TitleCards.duration(false, false) + 40.0)
+	check(flow.current == flow.title, "after the card the title comes up")
+	check(flow.fx.mosh.active, "by datamosh")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	check(not flow.fx.mosh.active, "the datamosh finishes in 380 ms")
+	# Again, skipped: any key goes straight to the title.
+	flow.start({"bootseed": "7", "jackedoff": "true"})
+	await _frames(1)
+	check(flow.boot.card_text() == "JACKED OFF", "the 1-in-10,000 card can be forced")
+	await _key(KEY_SPACE)
+	check(flow.current == flow.title, "any key skips the boot")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+
+
+## Reduce motion: the boot shows everything at once, the card has no flash,
+## and screens cut instead of datamoshing.
+func _reduced() -> void:
+	flow.settings.set_reduced_motion(true)
+	flow.apply_settings()
+	check(flow.fx.guard.reduce_flashing, "reduce motion turns on reduce flashing")
+	flow.start({"bootseed": "9", "breach": "double"})
+	await _frames(1)
+	var b := flow.boot
+	check(b.breach_ms() == 0.0, "reduce motion: the breach is at 100% at once")
+	await _advance(b.card_at() - b.elapsed() + 1.0)
+	await _frames(2)
+	check(flow.fx.cards.current_text() == "JACKED IN" and not flow.fx.cards._flashed, "the card shows with no flash frame")
+	await _advance(TitleCards.duration(false, true) + 40.0)
+	await _frames(2)
+	check(flow.current == flow.title and not flow.fx.mosh.active, "and the title cuts in, no datamosh")
+	flow.settings.set_reduced_motion(false)
+	flow.settings.reduce_flashing = false
+	flow.apply_settings()
+
+
+func _title() -> void:
+	var t := flow.title
+	check(t.selected == 0, "Jack in is selected")
+	await _key(KEY_DOWN)
+	check(TitleScreen.ITEMS[t.selected][1] == "quit", "the menu skips items that wait for milestone 4")
+	await _key(KEY_UP)
+	await _key(KEY_ENTER)
+	check(flow.current == gv and gv.visible, "Jack in starts a run")
+	check(gv.mode == GameState.Mode.ARCADE and not gv.started, "a fresh Arcade run")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 
 
 func _gs() -> GameState:
@@ -99,7 +178,10 @@ func _key(code: Key, ctrl := false) -> void:
 	var u := e.duplicate()
 	u.pressed = false
 	root.push_input(u, true)
-	await _settle()
+	if gv.session != null:
+		await _settle()
+	else:
+		await _frames(2)
 
 
 func _shot(name: String) -> void:
@@ -139,6 +221,7 @@ func _mirror_matches(where: String) -> void:
 
 func _arcade() -> void:
 	gv.new_run(11, GameState.Mode.ARCADE)
+	gv.best_before = 5   # a tiny session best, so passing it shows NEW BEST
 	gv.clock_paused = true   # run time only moves where a check needs it
 	await _frames(2)
 	var cam := gv.board.cam
@@ -146,6 +229,14 @@ func _arcade() -> void:
 	await _click(mid)
 	check(gv.started, "first click starts the run")
 	check(_gs().started and _gs().tiles >= 9, "first click opened a region")
+	check(gv.lattice.on and gv.lattice.origin == _gs().board.origin, "the lattice locks onto the real chunk grid")
+	check(LatticeLayer.chunk_id(_gs().board.chunk_key(gv.lattice.corner(Vector2i(2, -1)))) == "LAT 03F2:019F",
+		"chunk IDs come from the generator's chunk keys")
+	if _gs().score > 5:
+		await _frames(2)
+		check(flow.fx.cards.busy() and flow.fx.cards.current_text() == "NEW BEST", "passing the best so far shows NEW BEST")
+		check(flow.fx.cards.mouse_filter == Control.MOUSE_FILTER_IGNORE, "mid-run cards never take input")
+		await _advance(TitleCards.duration(false, false) + 40.0)
 	await _frames(int(BoardView.ANIM_MS / 16.0) + 10)
 	await _shot("01-opening")
 	_mirror_matches("after the first click")
@@ -245,35 +336,62 @@ func _arcade() -> void:
 	await _settle()
 	check(float(gv.state.signal) < 1.0, "the signal drains while the clock runs")
 
-	# A mine hit costs a link and shows the hit.
+	# A mine hit costs a link and shows the hit: a hazard tile, no popup text.
 	var mine := _hidden_mine()
 	cam.center = Vector2(mine) + Vector2(0.5, 0.5)
 	await _frames(1)
+	var pops := gv.popups._pops.size()
 	await _click(mine)
 	check(_gs().links == 2, "a mine hit costs a link")
 	check(gv.board.cell(mine)[0] == BoardView.HIT, "the view shows the hit")
+	check(gv.popups._pops.size() == pops, "no popup text on a mine hit")
 	check(int(gv.state.links) == 2, "the HUD shows two links")
+	check(gv.strain == 0, "two links and plenty of signal: no strain")
 	await _frames(4)
 	await _shot("03-mine-hit")
 
-	# Two more hits end the run: overlay, mines shown, R restarts.
-	for k in 2:
-		var m := _hidden_mine()
-		cam.center = Vector2(m) + Vector2(0.5, 0.5)
-		await _frames(1)
-		await _click(m)
+	# The second hit leaves one link: strain 1.
+	var m2 := _hidden_mine()
+	cam.center = Vector2(m2) + Vector2(0.5, 0.5)
+	await _frames(1)
+	await _click(m2)
+	await _frames(2)
+	check(gv.strain == 1, "one link left is strain 1")
+	check(gv.hud._tl.ghost > 0.0, "strain shows the HUD frames' ghost outlines")
+	check(flow.fx.strain_level == 1, "and the red edge")
+	await _shot("04-strain")
+
+
+## The last link: LINK SEVERED, then the game over screen and its buttons.
+func _game_over() -> void:
+	var cam := gv.board.cam
+	var m := _hidden_mine()
+	cam.center = Vector2(m) + Vector2(0.5, 0.5)
+	await _frames(1)
+	await _click(m)
 	check(gv.over and _gs().over, "three hits end the run")
-	check(gv.overlay.visible, "the run-end overlay shows")
 	var shown := 0
 	for k in gv.board._state:
 		if gv.board._state[k][0] == BoardView.MINE_SHOWN:
 			shown += 1
 	check(shown > 0, "hidden mines near the explored area are shown")
-	await _frames(30)
-	await _shot("04-link-severed")
 	_mirror_matches("at game over")
-	await _key(KEY_R)
-	check(not gv.over and not gv.started, "R starts a new run")
+	await _frames(2)
+	check(flow.fx.cards.current_text() == "LINK SEVERED" or flow.fx.cards._queue.any(func(c): return c.text == "LINK SEVERED"),
+		"losing the last link shows LINK SEVERED")
+	check(flow.current == gv, "the card holds over the board")
+	await _advance(TitleCards.duration(true, false) * 2.0 + 80.0)
+	check(flow.current == flow.over, "then the game over screen")
+	check(int(flow.over.summary.score) == _gs().score, "with the run's score")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	await _shot("05-game-over")
+	# Run it back by clicking the button.
+	var r := flow.over.button_rect("again")
+	_mouse(MOUSE_BUTTON_LEFT, r.get_center(), true)
+	_mouse(MOUSE_BUTTON_LEFT, r.get_center(), false)
+	await _frames(2)
+	check(flow.current == gv and not gv.started and not gv.over, "clicking Run it back starts a new run")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 
 
 func _ghost() -> void:
@@ -291,12 +409,16 @@ func _ghost() -> void:
 	check(int(gv.state.elapsed_ms) > 1000, "run time passes in Ghost mode")
 	check(float(gv.state.signal) == 1.0, "Ghost mode has no draining signal")
 	check(not gv.hud._sig.visible, "the HUD hides the signal meter in Ghost mode")
-	await _shot("05-ghost")
+	await _shot("07-ghost")
 	await _key(KEY_E, true)
 	check(gv.over and _gs().ended, "Ctrl+E ends a Ghost run")
-	check(gv.overlay.visible and gv.overlay.title == "Run banked", "the banked overlay shows")
-	await _frames(30)
-	await _shot("06-ghost-banked")
+	await _frames(2)
+	check(flow.current == flow.over and bool(flow.over.summary.ended), "a banked Ghost run goes straight to game over")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	await _shot("08-ghost-banked")
+	await _key(KEY_ESCAPE)
+	check(flow.current == flow.title, "Esc on game over goes to the title")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 
 
 func _hidden_mine() -> Vector2i:

@@ -103,7 +103,7 @@ def run_unit(godot: str) -> bool:
 
 
 def run_ui_smoke(godot: str) -> bool:
-    print("== ui smoke (the real gameplay screen, driven by input events)")
+    print("== ui smoke (the real screens, driven by input events)")
     code, out = run_godot(godot, ["--resolution", "1920x1080", "-s", "res://tests/ui_smoke.gd"], 600)
     for line in out.splitlines():
         if line.startswith("FAIL") or line.startswith("ui smoke") or "SCRIPT ERROR" in line:

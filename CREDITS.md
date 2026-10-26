@@ -8,6 +8,7 @@ Every third-party asset and tool that ships with CyberSweeper or is used to buil
 | --- | --- | --- | --- |
 | Chakra Petch | UI words | Copyright 2018 The Chakra Petch Project Authors (https://github.com/m4rc1e/Chakra-Petch) | SIL Open Font License 1.1, `design/fonts/OFL-ChakraPetch.txt` |
 | Martian Mono | Every digit | Copyright 2020 The Martian Mono Project Authors (https://github.com/evilmartians/mono) | SIL Open Font License 1.1, `design/fonts/OFL-MartianMono.txt` |
+| Noto Sans JP Bold (subset) | The few decorative Japanese words | © 2014-2021 Adobe (http://www.adobe.com/). A glyph subset of Noto Sans CJK JP Bold | SIL Open Font License 1.1, `design/fonts/OFL-NotoSansCJK.txt` |
 
 ## Engine
 

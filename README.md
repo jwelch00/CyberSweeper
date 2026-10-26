@@ -2,11 +2,11 @@
 
 Infinite, no-guessing Minesweeper with a cyberpunk look, for Windows, macOS and Linux. Three links, a draining signal bar, and never a coin flip. Made with Claude.
 
-**Status: milestone 3 of 6** (rendering, input, HUD, game feel). The gameplay screen is playable. The title, pause, settings, game-over, palettes and rivals screens, save data and Ghost mode's picker arrive in milestone 4. See `SPEC.md` for the full brief and `design/` for the look. Post-launch ideas (not scheduled) live in `IDEAS.md`.
+**Status: milestone 3 of 6** (rendering, input, HUD, game feel), restyled to art direction v2 with the full motion spec (`design/MOTION.md`). Launch plays the jack-in boot, then the title; Jack in starts an Arcade run, and a run ends on LINK SEVERED and the game-over screen. The palettes, rivals and settings screens, pause, the full game over (tally, rival ladder, unlocks), save data and Ghost mode's picker arrive in milestone 4. See `SPEC.md` for the full brief and `design/` for the look. Post-launch ideas (not scheduled) live in `IDEAS.md`.
 
 ## Playing
 
-Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path game`. A run starts straight away: click anywhere to jack in.
+Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path game`. The boot plays (any key or click skips it), then the title: **Jack in** (Enter) starts a run, and the first click opens it.
 
 | Input | Action |
 | --- | --- |
@@ -15,7 +15,9 @@ Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path 
 | Right click | flag (your opinion only; the game never reads flags) |
 | Drag, WASD or arrow keys | pan |
 | Mouse wheel | zoom (0.5× to 2×) |
-| R | run it back (after a run ends) |
+| R or Run it back | new run (game over) |
+| Esc or Main menu | back to the title (game over) |
+| Up/Down, Enter | title menu |
 | F11 | fullscreen |
 | M | mute sound |
 
@@ -26,11 +28,33 @@ Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path 
 | F2 | cycle palettes |
 | F3 | FPS and frame-time overlay |
 | F6 | scanlines on/off |
-| F7 | reduced motion on/off |
+| F7 | reduce motion on/off (also turns on reduce flashing) |
+| F9 | reduce flashing on/off |
 | F8 | switch between Arcade and Ghost mode (starts a new run) |
 | Ctrl+E | end a Ghost run |
 
-`godot --path game -- --mode ghost --seed 1234` starts a specific seed or mode.
+Command-line flags go after `--`, for example `godot --path game -- --skip-boot`:
+
+| Flag | Effect |
+| --- | --- |
+| `--mode ghost`, `--seed 1234` | straight into a run with that mode or seed |
+| `--skip-boot` | start at the title |
+| `--bootseed N`, `--breach clean\|one\|99\|double` | pick the boot breach (the motion lab's `?bootseed=` and `?breach=`) |
+| `--jackedoff` | force the 1-in-10,000 boot card |
+| `--reduce-motion`, `--reduce-flashing` | the accessibility settings (reduce motion also follows the OS setting where Godot can read it) |
+
+## Motion
+
+Everything in `design/MOTION.md` is in, with the timings from `design/shared/fx.js` (`game/ui/fx/motion.gd`; a test checks they agree):
+- **Boot:** the log, the breach (a 9×5 board solving itself, the session key cracking, hex dumps), ACCESS DENIED setbacks rolled from a per-launch boot seed (clean 40%, one 40%, the 99% agony 15%, double 5%), KEY ACCEPTED, then the JACKED IN card. One boot in 10,000 says JACKED OFF.
+- **Title cards:** JACKED IN, RIVAL DOWN (Arcade only, once per rival), NEW BEST (against this session's best until milestone 4 saves one) and LINK SEVERED. Mid-run cards never take input.
+- **Sandevistan cascade:** round reveal rings 22 ms apart; cascades of 12+ cells leave three drifting afterimages per cell.
+- **Strain:** one link left, or the signal under 10%, is strain 1; both is strain 2. The red edge beats, HUD labels corrupt, frame ghosts show; at strain 2 the HUD jitters and splits and tear lines cross the screen. The board is never touched. The faint low-signal edge pulse (from 30% shown) stays as the step before strain.
+- **Mine hit:** a hazard tile that slams in and marches, a danger flash, three tear lines, the shake, and the link block shattering. No popup text.
+- **Datamosh** on every screen change, and **micro-text** (the PKT counter, chunk IDs, rulers).
+- **Reduce motion** makes effects instant and strain a steady red edge plus a STRAIN tag; **reduce flashing** drops every full-screen flash. Nothing flashes more than 3 times a second (`ui/fx/flash_guard.gd`).
+
+The visor curvature (MOTION.md calls it optional) is left out: it would mean rendering the HUD off-screen, which loses the blurred-board panel backgrounds and resamples the 9 px micro-text into blur.
 
 ## Engine version
 
@@ -51,13 +75,17 @@ game/                  Godot project (open game/project.godot in the editor)
     rules.gd           loads data/tuning.json
     bot.gd             headless player: the three rivals and the tuning profiles
     session.gd         runs a GameState on a worker thread for the UI
-  ui/                  the gameplay screen (reads the core only through Session)
+  ui/                  the screens (read the core only through Session)
     main.tscn          entry scene; also screenshot (--shot) and gallery modes
-    game_view.gd       input, results -> visuals, effects
+    screen_flow.gd     boot -> title -> game -> game over, datamosh between them
+    screens/           boot (breach), title, game over
+    game_view.gd       the gameplay screen: input, results -> visuals, effects
     board_view.gd      one-shader board, 256x256 wrap-around cell texture
-    board.gdshader     every cell state, cipher drift, glow
+    board.gdshader     every cell state (hazard-stripe hits too), cipher drift, glow
+    lattice_layer.gd   the corp's chunk crosshairs, chunk IDs, seams and edge rulers
     glyph_atlas.gd     digits, hex, flag and mine drawn once into textures
-    hud/               cut-corner panels, signal meter, score, minimap
+    hud/               jagged street-deck panels (jag.gd ports CS.jagPoints), links, signal, score, minimap
+    fx/                motion timings, breach plan, title cards, datamosh, afterimages, strain, flash guard
   assets/              fonts + OFL, palettes.json (copied from design/), sfx
   data/
     tuning.json        every gameplay number (tuned in milestone 2)
@@ -70,6 +98,7 @@ tools/
   run_tests.py         runs the suites, property games in parallel
   simulate.py          runs the bots, tunes, writes the tuning report
   sync_design.py       copies palettes and fonts from design/ (--check verifies)
+  js_reference.mjs     records design/shared/*.js outputs the ports are tested against (needs node)
   make_sfx.py          synthesizes the sound effects
   shots.py             renders comparison screenshots into test-output/shots/
 docs/tuning-report.md  bot results behind the current tuning and rival scores
@@ -101,7 +130,7 @@ From the repo root:
 python tools/run_tests.py
 ```
 
-That's the **fast** suite: unit tests, the UI smoke test and 200 property games, about a minute and a half on 6 cores. The UI smoke test plays the real gameplay screen with real mouse and keyboard events and checks that the board always shows what the game knows. Other suites:
+That's the **fast** suite: unit tests, the UI smoke test and 200 property games, about a minute and a half on 6 cores. The UI smoke test plays the real screens with real mouse and keyboard events: the boot and its skip, the title, a run (checking that the board always shows what the game knows), mine hits and strain, LINK SEVERED, the game-over buttons and Ghost mode. It steps the motion clock by hand, so cards and transitions are deterministic. Other suites:
 
 ```bash
 python tools/run_tests.py --suite gate
@@ -156,12 +185,13 @@ Report columns: **locks** is chunks locked, and **proofs** is how many of them w
 python tools/shots.py
 ```
 
-This renders seeded screenshots into `test-output/shots/`:
+This renders seeded screenshots, with the motion clock pinned, into `test-output/shots/`:
 - every cell state in all six palettes, at 1× and 0.5×;
-- gameplay in each palette;
-- the zoom limits;
-- Ghost mode;
-- the real screen mid-play.
+- gameplay in each palette, strain 2 with a hazard tile, a cascade mid-wave;
+- the zoom limits and Ghost mode;
+- the boot at ACCESS DENIED and KEY ACCEPTED, the JACKED IN and JACKED OFF cards;
+- the title, the game over and a datamosh in both halves;
+- the real screens driven by input (`ui-*.png`).
 
 It needs a display. On a headless Linux box, point `DISPLAY` at an Xvfb.
 

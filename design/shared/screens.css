@@ -1,0 +1,46 @@
+/* Layout for the v2 screens (street-deck HUD over a corporate board).
+   Each HUD group (.grp.deck) holds a .panel; CS.jag() gives it a jagged silhouette and an SVG outline. */
+.grp { position: absolute; z-index: 20; }
+.grp > .panel { position: relative; z-index: auto; }
+.grp > .slashes { position: absolute; }
+
+.g-tl { top: 30px; left: 30px; }
+.g-tl > .panel { padding: 20px 24px 26px; display: grid; gap: 14px; }
+.g-tl .wordmark { font-size: 22px; }
+.g-tl .row { display: flex; align-items: center; gap: 16px; }
+
+.g-sig { top: 30px; left: 650px; width: 620px; }
+.g-sig > .panel { padding: 16px 20px 32px; }
+.g-sig .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
+.g-sig .pct { font-family: var(--f-data); font-weight: 600; font-size: 16px; color: var(--mc, var(--accent)); }
+
+.g-score { top: 30px; right: 30px; min-width: 330px; }
+.g-score > .panel { padding: 16px 24px 24px; text-align: right; }
+.g-score .big { font-family: var(--f-data); font-weight: 800; font-size: 56px; line-height: 1.05; margin-top: 8px; color: var(--ink); text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+.g-score .rival { margin-top: 8px; display: grid; gap: 6px; }
+.g-score .rival .lbl b { color: var(--ink); font-weight: 600; }
+.g-score .bar { height: 4px; background: color-mix(in srgb, var(--accent2) 18%, transparent); }
+.g-score .bar i { display: block; height: 100%; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+
+.g-bl { bottom: 30px; left: 30px; }
+.g-bl > .panel { padding: 16px 22px 22px; display: grid; grid-template-columns: auto auto; gap: 4px 30px; }
+.g-bl .v { font-family: var(--f-data); font-weight: 600; font-size: 16px; color: var(--ink); }
+
+.g-mm { bottom: 30px; right: 30px; }
+.g-mm > .panel { padding: 12px 12px 14px; }
+.g-mm canvas { display: block; width: 260px; height: auto; image-rendering: pixelated; }
+.g-mm .corp { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; font-family: var(--f-data); font-weight: 300; font-size: 9px; letter-spacing: .1em; color: var(--ink-dim); }
+.g-mm .corp .jp { font-size: 10px; letter-spacing: 0; }
+.g-mm .frame { position: relative; box-shadow: 0 0 0 1px var(--tile-edge); }
+
+.g-hints { bottom: 30px; left: 560px; width: 800px; z-index: 21; }
+.g-hints > .panel { display: flex; justify-content: center; gap: 26px; padding: 13px 22px 16px; color: var(--ink-dim); font-size: 15px; font-weight: 500; }
+.g-hints > .panel > span { display: inline-flex; gap: 8px; align-items: center; }
+
+.cursor { position: absolute; z-index: 30; width: 30px; height: 30px; color: var(--accent); filter: drop-shadow(0 0 4px var(--accent)); pointer-events: none; }
+
+/* lab chrome (hidden in recordings) */
+.lab { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999; display: flex; gap: 8px; flex-wrap: wrap; padding: 10px; background: rgba(0,0,0,.85); font-family: var(--f-ui); }
+.lab button { font: 600 15px var(--f-ui); color: #fff; background: #2a2f45; border: 0; padding: 8px 14px; cursor: pointer; }
+.lab button:hover, .lab button:focus-visible { background: #3c4466; outline: 2px solid #fff; }
+.lab span { color: #aaa; font-size: 14px; align-self: center; margin-left: 8px; }

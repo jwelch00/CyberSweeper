@@ -18,8 +18,10 @@ func _ready() -> void:
 	_font = load("res://assets/fonts/MartianMono-800.ttf")
 
 
-func add(text: String, cell: Vector2i, color: Color) -> void:
-	_pops.append({"text": text, "cell": cell, "color": color, "born": view.clock_ms})
+## A popup at a cell; it appears at at_ms (now by default; a cascade's shows
+## when its last ring lands).
+func add(text: String, cell: Vector2i, color: Color, at_ms := -1.0) -> void:
+	_pops.append({"text": text, "cell": cell, "color": color, "born": view.clock_ms if at_ms < 0.0 else at_ms})
 
 
 ## Popup for one move: a single reveal shows its number, a cascade one sum.
@@ -52,6 +54,8 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	for p in _pops:
+		if view.clock_ms < p.born:
+			continue
 		var t: float = (view.clock_ms - p.born) / LIFE_MS
 		var alpha := 1.0 - smoothstep(0.55, 1.0, t)
 		var base := view.cam.world_to_screen(Vector2(p.cell)) + Vector2(view.cam.cell_px() * 0.75, -26.0)

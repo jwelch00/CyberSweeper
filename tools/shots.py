@@ -5,12 +5,19 @@
     python tools/shots.py --quick    # gallery + one gameplay shot
 
 Needs a display (any desktop; on a headless Linux box set DISPLAY to an Xvfb).
-Shots come from seeded bot runs, so they are the same every time:
+Shots come from seeded bot runs and a pinned motion clock, so they are the
+same every time:
   gallery-1x.png / gallery-0.5x.png   every cell state in all six palettes
   gameplay-<palette>.png              a NULL//SAINT run at 1x zoom
+  gameplay-critical.png               strain 2 (one link, 8% signal) and a hazard tile
+  cascade.png                         a sandevistan cascade mid-wave
   zoom-0.5x.png / zoom-2x.png         the same board at the zoom limits
   ghost.png                           Ghost mode (no signal meter)
-  ui-*.png                            the real screen driven by input events
+  boot-denied.png / boot-accepted.png the boot breach at ACCESS DENIED and KEY ACCEPTED
+  card-jacked-in.png / -off.png       the JACKED IN card, and the 1-in-10,000 one
+  title.png / game-over.png           the title and the run end
+  mosh-120.png / mosh-260.png         a datamosh transition, breaking out and snapping in
+  ui-*.png                            the real screens driven by input events
 """
 from __future__ import annotations
 
@@ -54,6 +61,19 @@ def main() -> int:
         ok = shot(godot, ["--shot", str(OUT / "zoom-0.5x.png"), "--zoom", "0.5"] + run) and ok
         ok = shot(godot, ["--shot", str(OUT / "zoom-2x.png"), "--zoom", "2.0"] + run) and ok
         ok = shot(godot, ["--shot", str(OUT / "ghost.png"), "--mode", "ghost"] + run) and ok
+        ok = shot(godot, ["--shot", str(OUT / "gameplay-critical.png"), "--signal", "0.08", "--links", "1",
+                          "--hit", "600"] + run) and ok
+        ok = shot(godot, ["--shot", str(OUT / "cascade.png"), "--cascade", "150"] + run) and ok
+        boot = ["--screen", "boot", "--bootseed", "5"]
+        ok = shot(godot, ["--shot", str(OUT / "boot-denied.png"), "--breach", "one", "--at", "denial"] + boot) and ok
+        ok = shot(godot, ["--shot", str(OUT / "boot-accepted.png"), "--at", "accept"] + boot) and ok
+        ok = shot(godot, ["--shot", str(OUT / "card-jacked-in.png"), "--at", "card", "--card-ms", "300"] + boot) and ok
+        ok = shot(godot, ["--shot", str(OUT / "card-jacked-off.png"), "--at", "card", "--card-ms", "300",
+                          "--jackedoff"] + boot) and ok
+        ok = shot(godot, ["--shot", str(OUT / "title.png"), "--screen", "title"]) and ok
+        ok = shot(godot, ["--shot", str(OUT / "game-over.png"), "--screen", "over"]) and ok
+        for ms in ("120", "260"):
+            ok = shot(godot, ["--shot", str(OUT / f"mosh-{ms}.png"), "--screen", "mosh", "--mosh-ms", ms]) and ok
         code, out = rt.run_godot(godot, BASE[:-2] + ["-s", "res://tests/ui_smoke.gd", "--", "--shots", str(OUT)],
                                  1200, headless=False)
         print("  ui smoke: " + next((l for l in out.splitlines() if l.startswith("ui smoke")), "no result"))

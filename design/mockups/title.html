@@ -4,55 +4,16 @@
 <meta charset="utf-8">
 <title>CyberSweeper — title</title>
 <link rel="stylesheet" href="../shared/cs.css">
-<style>
-  .screen { --cell: 46px; }
-  .shade { position: absolute; inset: 0; z-index: 6; background: linear-gradient(90deg, var(--void) 0%, color-mix(in srgb, var(--void) 92%, transparent) 34%, color-mix(in srgb, var(--void) 40%, transparent) 62%, transparent 85%); }
-  .left { position: absolute; z-index: 20; left: 140px; top: 170px; width: 1000px; }
-  .wm { position: relative; font-size: 148px; line-height: .9; display: inline-block; }
-  .wm::before, .wm::after { content: attr(data-t); position: absolute; inset: 0; }
-  .wm::before { clip-path: inset(43% 0 51% 0); transform: translateX(11px); color: var(--accent); text-shadow: none; }
-  .wm::after { clip-path: inset(72% 0 24% 0); transform: translateX(-7px); color: var(--accent2); text-shadow: none; }
-  .tag { margin-top: 30px; font-size: 28px; font-weight: 500; color: var(--ink); white-space: nowrap; line-height: 1.3; }
-  .tag span { color: var(--ink-dim); }
-  .menu { margin-top: 74px; display: grid; gap: 6px; width: 440px; }
-  .mi { position: relative; display: flex; justify-content: space-between; align-items: center; height: 60px; padding: 0 22px 0 26px; font-size: 26px; font-weight: 600; color: var(--ink-dim); }
-  .mi.sel { color: var(--void); background: var(--accent); box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 40%, transparent); clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px); }
-  .mi .kbd { font-size: 13px; }
-  .mi small { font-family: var(--f-data); font-size: 13px; font-weight: 400; color: var(--ink-dim); }
-  .foot { position: absolute; z-index: 20; left: 140px; bottom: 70px; display: flex; gap: 64px; }
-  .foot div { display: grid; gap: 6px; }
-  .foot .v { font-family: var(--f-data); font-weight: 600; font-size: 22px; color: var(--ink); }
-  .foot .ver { align-self: end; font-family: var(--f-data); font-size: 13px; color: var(--ink-dim); padding-bottom: 4px; }
-</style>
+<link rel="stylesheet" href="../shared/screens.css">
 </head>
 <body>
-<div class="screen fx-scanlines fx-vignette">
-  <div class="board-viewport" id="vp"></div>
-  <div class="shade"></div>
-  <div class="left">
-    <div class="wordmark wm" data-t="CYBERSWEEPER">CYBERSWEEPER</div>
-    <p class="tag">Infinite Minesweeper. Three links. <span>Never a coin flip.</span></p>
-    <nav class="menu">
-      <div class="mi sel">Jack in <span class="kbd">Enter</span></div>
-      <div class="mi">Palettes <small>2 of 5</small></div>
-      <div class="mi">Rivals</div>
-      <div class="mi">Settings</div>
-      <div class="mi">Quit</div>
-    </nav>
-  </div>
-  <div class="foot">
-    <div><span class="lbl">best run</span><span class="v">2,293</span></div>
-    <div><span class="lbl">rivals beaten</span><span class="v">2 of 3</span></div>
-    <div><span class="lbl">tiles decrypted</span><span class="v">7,812</span></div>
-    <span class="ver">v0.1.0, plays offline</span>
-  </div>
-</div>
+<div id="screen"></div>
 <script src="../shared/board.js"></script>
+<script src="../shared/fx.js"></script>
+<script src="../shared/screens.js"></script>
 <script>
   CS.applyPalette(); CS.injectGlyphs();
-  const st = CS.makeBoard({ W: 60, H: 30, seed: 4242, density: 0.16, start: [44, 12],
-    blobs: [{ x: 44, y: 12, r: 6.5 }, { x: 50, y: 17, r: 5 }], noise: 0.9, flagRate: 0.9, frontierFlagRate: 0.3 });
-  CS.render(document.getElementById("vp"), st, { x0: 8, y0: 0, cols: 42, rows: 24, px: -14, py: -22 }, {});
+  CS.buildTitle(document.getElementById("screen"));
 </script>
 </body>
 </html>

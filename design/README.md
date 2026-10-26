@@ -1,55 +1,70 @@
 # CyberSweeper design
 
-Everything here is the source of truth for how CyberSweeper looks. The mockups are HTML so they use the real fonts and tokens; the game should match them natively in Godot, not reuse the HTML.
+Everything here is the source of truth for how CyberSweeper looks and moves. The mockups are HTML so they use the real fonts and tokens. The game should match them natively in Godot, not reuse the HTML.
 
-Open `index.html` in a browser to browse every screen and re-skin it in any palette.
+- Open `index.html` in a browser to browse every screen and re-skin it in any palette.
+- Read `MOTION.md` for every animation, with timings. The videos are in `motion/`.
 
-## Concept: the ciphertext field
+## Art direction: "their software is perfect, yours is falling apart"
 
-The board is an encrypted data field. Hidden cells are raised "encrypted" chips with one cut corner and a faint hex byte that slowly re-rolls; revealing a cell decrypts it, and the byte scrambles into the number. Revealed cells sink into one continuous dark floor so the frontier reads instantly. That cipher grid is the one loud, signature idea; the HUD stays quiet and disciplined around it.
-
-The structural motif is the **cut corner**: hidden cells cut top-left, panels and buttons cut top-left and bottom-right.
+- **The board** is TETSUKAGE DATAWORKS' secure lattice (鉄影, "iron shadow"), a fictional megacorp you're breaking into.
+  - It looks like exact, sterile corporate software: raised encrypted chips with one cut corner and a faint hex byte, revealed cells sinking into one continuous dark floor, and hairline chunk seams.
+  - Corner details: registration crosshairs and chunk IDs at every 16-cell chunk corner, plus edge rulers with coordinates.
+  - It never glitches or jitters.
+- **The HUD** is the player's street cyberdeck, after the HUD language of Cyberpunk 2077 (original, nothing copied).
+  - Jagged asymmetric frames: notches, sawtooth teeth, hot corner strokes with square terminals.
+  - Labels in tags with the lower-right corner cut off.
+  - Links as chunky memory blocks; signal as a health bar with a big readout.
+  - Slash hatching, micro-text, a ribbon-cable connector, and a slight visor perspective.
+  - All grime and glitching happens here and at the screen edges.
+- **Gameplay stays pure minesweeper.** No power-ups or upgrades: three links and a timer.
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
+| `MOTION.md` | Every moving part: what it looks like, trigger, timeline in ms, reduced-motion fallback, Godot approach |
+| `motion/*.mp4` | One video per effect, plus slow-motion versions (`-slow3x`, `-slow4x`) of the fast ones |
+| `motion/*-storyboard.png` | Timestamped frame grids of each effect |
+| `mockups/motion.html` | Live motion lab. Buttons trigger each effect; `?slow=4` slows everything, `?palette=<id>` re-skins, `?jackedoff` forces the easter egg, `?breach=clean\|one\|99\|double` or `?bootseed=N` picks the boot breach variant |
 | `png/title-signal.png` | Title screen |
-| `png/gameplay-<palette>.png` | Gameplay HUD and board, once per palette |
-| `png/game-over-signal.png` | Game over: score tally by number, rivals ladder, unlock card |
-| `png/palettes.png` | Palette picker with locked and unlocked states |
-| `png/components.png` | Every cell state, numbers in all palettes at 1× and 0.5× zoom, HUD pieces, type specimen, motion timings |
+| `png/gameplay-<palette>.png` | Gameplay in all six palettes |
+| `png/gameplay-critical.png` | Gameplay at strain level 2 (1 link, 8% signal) |
+| `png/game-over-signal.png` | Game over: score tally by number, rival ladder, rival-down card |
+| `png/palettes.png` | Palette picker |
+| `png/components.png` | Every cell state, numbers in all palettes at 1x and 0.5x zoom, HUD pieces, type, motion summary |
 | `png/icon.png` | Icon concepts and size ladder |
 | `png/download-page.png` | The public download page (1440px wide) |
-| `mockups/*.html` | Live versions of the above. Add `?palette=hotwire` (or any palette id) to re-skin one |
-| `tokens/palettes.json` | All colors for all five palettes, number ramps, unlock conditions, type scale, effect specs. **The game reads colors from here.** |
-| `tokens/palettes.css` | The same palettes as CSS custom properties (generated from the JSON, used by the mockups and the download page) |
-| `fonts/` | Chakra Petch (words) and Martian Mono (digits), TTF for Godot and WOFF2 for the web, with OFL license files |
-| `icon/icon.svg` | Primary icon ("Black ice") |
-| `icon/icon-small.svg` | Simplified icon for 32px and below |
-| `icon/icon.ico`, `icon/icon.icns` | Ready-made Windows and macOS icon files |
-| `icon/png/icon-<size>.png` | 16 to 1024px exports |
-| `icon/concept-*.svg` | The two alternative concepts, kept for reference |
-| `shared/` | CSS and the mockup board generator. Mockup-only: the board generator here does NOT enforce the no-50/50 rule |
+| `png/easter-egg-jacked-off.png` | The 1-in-10,000 boot card |
+| `png/boot-breach.png` | The boot breach at the ACCESS DENIED moment |
+| `mockups/*.html` | Live versions of the screens. Add `?palette=<id>` to re-skin. `gameplay.html` also takes `?links=1..3&signal=0..100&strain=0..2` |
+| `tokens/palettes.json` | All colors for all six palettes, number ramps, type scale, effect specs. **The game reads colors from here.** |
+| `tokens/palettes.css` | The same palettes as CSS variables, generated by `tokens/gen_palettes.py` |
+| `fonts/` | Chakra Petch (words) and Martian Mono (digits) as TTF and WOFF2, and a tiny Noto Sans JP Bold subset for the handful of Japanese words. All SIL OFL, licenses included |
+| `icon/` | `icon.svg` (primary "Black ice"), `icon-small.svg` (32px and below), `icon.ico`, `icon.icns`, PNGs 16–1024, and the two alternative concepts |
+| `shared/fx.js` | Motion prototypes. All timings in `FX.T` |
+| `shared/screens.js`, `shared/screens.css` | Screen builders, the jagged frame generator (`CS.jagPoints`), HUD layout |
+| `shared/board.js`, `shared/cs.css` | Mockup board generator and renderer, base styles. Mockup only: this board generator does NOT enforce the no-50/50 rule |
 
 ## Palettes
 
-| Id | Name | Unlock (placeholder thresholds) |
+| Id | Name | Unlock |
 | --- | --- | --- |
 | `signal` | Signal | Default |
 | `hotwire` | Hotwire | Beat mx_halcyon (Runner rival) |
-| `root-access` | Root access | Decrypt 10,000 tiles across all runs |
-| `rustbelt` | Rustbelt | Reach depth 300 in one run |
+| `root-access` | Root access | Decrypt 25,000 tiles across all runs |
+| `rustbelt` | Rustbelt | Reach depth 120 in one run |
 | `icebreaker` | Icebreaker | Beat NULL//SAINT (Netrunner rival) |
-| `plaintext` | Plaintext | Always unlocked. Colorblind-safe: numbers 1-4 stay distinct under protanopia, deuteranopia and tritanopia; hidden vs revealed differ by brightness |
+| `plaintext` | Plaintext | Always unlocked. Colorblind-safe: numbers 1–4 stay distinct under protanopia, deuteranopia and tritanopia; hidden vs revealed differ by brightness |
 
 Every number color clears 5.7:1 contrast against its palette's revealed floor.
 
 ## Type
 
-- **Chakra Petch** 400–700: wordmark (700, caps, chromatic split), titles, menu items, buttons, labels. Labels are lowercase or sentence case, never tracked-out caps.
-- **Martian Mono** 300–800: every digit the player reads. Cell numbers are 800 weight at 52% of the cell size.
+- **Chakra Petch** 400–700: wordmark (700, caps, chromatic split), titles, menu items, buttons, HUD tags.
+- **Martian Mono** 300–800: every digit the player reads, plus all micro-text. Cell numbers are 800 weight at 52% of the cell size.
+- **Japanese** (Noto Sans JP Bold subset), used sparingly and always as real words: 鉄影 (Tetsukage), 監視中 (under surveillance), 接続完了 (connection complete), 撃破 (defeated), 記録更新 (record updated), 切断 (disconnected).
 
 ## Placeholder content
 
-Rival scores (640 / 2,180 / 5,960), file sizes, checksums and the 2,293 sample run are illustrative. Replace them with real numbers after the bot simulations and builds.
+Run scores, file sizes and checksums in the mockups are illustrative. Rival scores match the repo as of milestone 3: script.kitty 1,890, mx_halcyon 3,590, NULL//SAINT 7,000.

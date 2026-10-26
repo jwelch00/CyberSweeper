@@ -16,6 +16,7 @@ Build CYBERSWEEPER: an arcade-style, infinite-board Minesweeper with a sleek cyb
 - Score = the sum of the numbers on every numbered cell the player uncovered (zeros score 0; cells revealed by cascades count).
 - Controls: left click reveals, right click flags, left-clicking a number whose flags are all placed chords its neighbors.
 - Pressure (required, because a perfect player could otherwise play forever): the signal bar drains over time and refills as cells are revealed; signal at 0 costs a link and refills the bar. Mine density rises slowly with depth. If you have a better idea, propose it in the plan.
+- **Pure minesweeper (core rule):** gameplay stays pure minesweeper. No power-ups, upgrades, pickups or perks, in a run or between runs. The only resources are the 3 links and the signal timer (Ghost mode drops the timer). Visual effects are feel, never rules. Separate opt-in modes in IDEAS.md (Versus, mutators) may change those two resources, but never add new ones.
 
 ## No 50/50s (hard requirement)
 - At every moment of every game, at least one unrevealed cell next to the revealed area must be provably safe from the visible information (numbers and revealed mines). Flags are player opinions and must NOT count as information.
@@ -33,16 +34,18 @@ Build CYBERSWEEPER: an arcade-style, infinite-board Minesweeper with a sleek cyb
 ## Visual design (source of truth: `design/`)
 - Match the mockups in `design/png/` for layout, color, type and feel. The HTML in `design/mockups/` shows exact sizes and states; open `design/index.html` in a browser to browse them. Don't port the HTML; rebuild the look natively in Godot.
 - **Colors**: load every color from `design/tokens/palettes.json` (copy it into the project and read it at runtime, or generate a resource from it). Never hand-copy hex values into scenes.
-- **Fonts**: `design/fonts/` has Chakra Petch (UI words) and Martian Mono (every digit) as TTF and WOFF2, plus their OFL licenses. Bundle the license files with the game.
+- **Fonts**: `design/fonts/` has Chakra Petch (UI words) and Martian Mono (every digit) as TTF and WOFF2, a Noto Sans JP Bold subset for the few Japanese words, plus their OFL licenses. Bundle the license files with the game.
 - **Cells**: hidden cells are raised chips with one cut corner (top-left) and a faint hex byte; revealed cells form one continuous dark floor with glowing numbers. See `design/png/components.png` for every state, including mine hit, wrong flag and chord preview.
 - **Signature effect**: the cipher bytes on hidden cells re-roll in a slow diagonal wave, and on reveal a byte scrambles for ~120ms then resolves into the number. Timings for all motion are in the components sheet.
-- **Effects**: subtle scanlines (toggle in settings), vignette, neon glow on numbers and accents, chromatic-aberration split on the wordmark and on mine hits, screen shake on link loss. Respect a reduced-motion setting (freeze cipher drift, no shake).
+- **Effects**: subtle scanlines (toggle in settings), vignette, neon glow on numbers and accents, chromatic-aberration split on the wordmark, screen shake on link loss. Respect a reduced-motion setting (freeze cipher drift, no shake).
+- **Art direction v2 and motion** (`design/README.md`, `design/MOTION.md`): the board is the corporation's clean lattice (chunk crosshairs, chunk IDs, edge rulers, hazard-stripe mine hits with no popup text); the HUD is the player's jagged street deck. MOTION.md specifies the boot breach, title cards, sandevistan cascades, strain, mine hit, datamosh transitions and micro-text, plus reduce-motion and reduce-flashing settings.
 - Numbers must stay legible at every zoom level in every palette. Cell numbers never render below 11px.
 - Optional synthy SFX: generate them yourself or use CC0 assets only, and list their licenses.
 
 ## Screens
 Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for title, gameplay, game over and palettes; build pause, settings and rivals in the same language (panels with cut corners, Chakra Petch for words, Martian Mono for digits).
 - Game over shows the score tally broken down by number value (count × value per number, then the total), run stats, the rival ladder with the player's run slotted in, and any palette unlocked this run.
+- Game over's **Run it back (R)** and **Main menu (Esc)** are clickable buttons as well as keys.
 
 ## Palettes and unlockables
 - Six palettes, defined in `design/tokens/palettes.json`: Signal (default), Hotwire, Root access, Rustbelt, Icebreaker, and Plaintext.

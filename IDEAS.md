@@ -75,13 +75,12 @@ Decide between 1 and 2 before building. Either way, keep 3 as the fallback.
 
 ### Gameplay
 - **Race your ghost:** a faded replay of your personal best plays on the same seed alongside you. This needs identical boards for both, like Versus mode, and replays make it straightforward.
-- **Mutators:** optional run modifiers with score multipliers and their own leaderboard:
+- **Mutators:** optional run modifiers with score multipliers and their own leaderboard. Like Ghost and Versus they're separate opt-in modes: they may change the links or the timer, but never add a power-up or a new resource (SPEC.md's core rule):
   - Iron link: 1 link, 2× score.
   - No flags.
   - Blackout: numbers fade 5 s after they're revealed.
 - **Sectors:** as depth increases, the board passes through named sectors ("Sector 7 // Cold storage"), with subtle visual shifts like a tint or a different cipher glyph style, so an infinite board still feels like a journey.
 - **Landmarks:** rare authored structures inside the procedural board, such as a wide zero "data lake" or a dense "firewall" band, still validated by the no-50/50 solver.
-- **Beacons:** checkpoints at depth milestones that refill the signal or restore one link, giving runs mid-term goals.
 - **Data shards:** very rare tiles that drop a line of lore when decrypted: rival backstory, what the grid is, who NULL//SAINT really is. They're collectible, with a lore log in the menu.
 - **Rival rematches:** after you beat a rival, they come back later with a higher score and a new taunt, so the chase never fully ends.
 

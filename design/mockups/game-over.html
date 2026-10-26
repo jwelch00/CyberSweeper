@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>CyberSweeper — game over</title>
 <link rel="stylesheet" href="../shared/cs.css">
+<link rel="stylesheet" href="../shared/screens.css">
 <style>
   #vp { filter: saturate(.35) brightness(.55); }
   .dim { position: absolute; inset: 0; z-index: 6; background: color-mix(in srgb, var(--void) 55%, transparent); }
@@ -46,7 +47,7 @@
   .rung.beaten .who b, .rung.beaten .pts { color: var(--ink-dim); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--accent2) 80%, transparent); text-decoration-thickness: 2px; }
   .rung.prev { opacity: .6; }
 
-  .unlock { right: 120px; top: 640px; width: 640px; padding: 30px 44px 34px; --cut: 14px; border-color: var(--accent2); box-shadow: 0 0 40px color-mix(in srgb, var(--accent2) 25%, transparent); }
+  .unlock { right: 120px; top: 600px; width: 640px; padding: 30px 44px 34px; --cut: 14px; border-color: var(--accent2); box-shadow: 0 0 40px color-mix(in srgb, var(--accent2) 25%, transparent); }
   .unlock .lbl { color: var(--accent2); font-size: 16px; }
   .unlock .name { margin-top: 4px; font-size: 34px; font-weight: 700; color: var(--ink); }
   .unlock .why { margin-top: 4px; font-size: 16px; color: var(--ink-dim); }
@@ -62,7 +63,7 @@
   <div class="dim"></div>
 
   <section class="panel main">
-    <h1>Link severed</h1>
+    <h1><span class="tagl" style="--tc:var(--danger);font-size:20px;padding:6px 18px 6px 14px">link severed</span></h1>
     <p class="sub">All three links lost at depth 212, eleven minutes in.</p>
     <div class="score">
       <div class="big num">2,293</div>
@@ -85,23 +86,24 @@
   <section class="panel side">
     <h2>Rivals <span>local leaderboard</span></h2>
     <div class="ladder">
-      <div class="rung"><span class="rk">1</span><span class="who">NULL//SAINT<small>netrunner</small></span><span class="pts">5,960<small>3,667 to go</small></span></div>
-      <div class="rung you"><span class="rk">2</span><span class="who">You<small>this run</small></span><span class="pts">2,293</span></div>
-      <div class="rung beaten"><span class="rk">3</span><span class="who"><b>mx_halcyon</b><small>runner, beaten this run</small></span><span class="pts">2,180</span></div>
-      <div class="rung prev"><span class="rk">4</span><span class="who">You<small>previous best</small></span><span class="pts">1,734</span></div>
-      <div class="rung beaten"><span class="rk">5</span><span class="who"><b>script.kitty</b><small>rookie</small></span><span class="pts">640</span></div>
+      <div class="rung"><span class="rk">1</span><span class="who">NULL//SAINT<small>netrunner</small></span><span class="pts">7,000<small>4,707 to go</small></span></div>
+      <div class="rung"><span class="rk">2</span><span class="who">mx_halcyon<small>runner</small></span><span class="pts">3,590<small>1,297 to go</small></span></div>
+      <div class="rung you"><span class="rk">3</span><span class="who">You<small>this run</small></span><span class="pts">2,293</span></div>
+      <div class="rung beaten"><span class="rk">4</span><span class="who"><b>script.kitty</b><small>rookie, beaten this run</small></span><span class="pts">1,890</span></div>
+      <div class="rung prev"><span class="rk">5</span><span class="who">You<small>previous best</small></span><span class="pts">1,734</span></div>
     </div>
   </section>
 
   <section class="panel unlock">
-    <div class="lbl">Palette unlocked</div>
-    <div class="name">Hotwire</div>
-    <div class="why">You beat mx_halcyon. Hot pink lead, cyan support, plum shadows.</div>
-    <div class="swatch" id="sw"></div>
-    <div class="row"><a class="btn">Equip Hotwire</a><a class="btn ghost">Later</a></div>
+    <div class="lbl">Rival down</div>
+    <div class="name">script.kitty</div>
+    <div class="why" style="font-style:italic">"script.kitty has left the chat. She'll be back. She always comes back."</div>
+    <div class="row"><a class="btn">Run it back <span class="kbd">R</span></a></div>
   </section>
 </div>
 <script src="../shared/board.js"></script>
+<script src="../shared/fx.js"></script>
+<script src="../shared/screens.js"></script>
 <script>
   CS.applyPalette(); CS.injectGlyphs();
   const st = CS.makeBoard({
@@ -124,7 +126,16 @@
     </div>`).join("") + `<div class="eq"><span class="lbl">total</span><span class="v">${CS.fmt(total)}</span></div>`;
   // swatch of the unlocked palette, read from its tokens
   const probe = document.createElement("div"); probe.setAttribute("data-palette", "hotwire"); document.body.appendChild(probe);
+  if (!document.getElementById("sw")) document.body.insertAdjacentHTML("beforeend", '<div id="sw" hidden></div>');
   const cs = getComputedStyle(probe);
+  // v2: wrap each panel in a jagged HUD group
+  document.querySelectorAll(".screen > .panel").forEach((p, i) => {
+    const r = p.getBoundingClientRect(), g = document.createElement("div");
+    g.className = "grp deck"; g.dataset.seed = 3 + i * 5; g.style.left = r.left + "px"; g.style.top = r.top + "px";
+    p.parentNode.insertBefore(g, p); g.appendChild(p);
+    p.style.position = "relative"; p.style.left = p.style.top = p.style.right = "auto";
+  });
+  CS.jagAll(document.querySelector(".screen"));
   document.getElementById("sw").innerHTML = ["--tile", "--accent", "--accent2", "--warn", "--danger", "--n1", "--n2", "--n3", "--n4", "--ink"].map((v) => `<i style="background:${cs.getPropertyValue(v)}"></i>`).join("");
 </script>
 </body>

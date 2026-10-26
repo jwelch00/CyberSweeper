@@ -147,3 +147,158 @@ body { -webkit-font-smoothing: antialiased; }
 
 /* glyph sprite holder */
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* =====================================================================
+   ART DIRECTION v2: "their software is perfect, yours is falling apart"
+   Board  = TETSUKAGE DATAWORKS secure lattice. Corporate, exact, sterile.
+   HUD    = the player's street cyberdeck. Jagged, asymmetric, misregistered,
+            covered in micro-text. Readable, but nothing about it is tidy.
+   ===================================================================== */
+@font-face { font-family: "CS JP"; font-weight: 700; src: url("../fonts/NotoSansJP-Bold-subset.woff2") format("woff2"); }
+:root { --f-jp: "CS JP", "Noto Sans CJK JP", sans-serif; }
+.jp { font-family: var(--f-jp); font-weight: 700; }
+
+/* ---------- corporate board layer ---------- */
+.lattice { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.lattice .reg { position: absolute; width: 13px; height: 13px; margin: -7px 0 0 -7px; }
+.lattice .reg::before, .lattice .reg::after { content: ""; position: absolute; background: color-mix(in srgb, var(--tile-edge) 70%, var(--ink) 30%); }
+.lattice .reg::before { left: 6px; top: 0; width: 1px; height: 13px; }
+.lattice .reg::after { top: 6px; left: 0; height: 1px; width: 13px; }
+.lattice .cid { position: absolute; font-family: var(--f-data); font-weight: 300; font-size: 9px; letter-spacing: .08em; color: color-mix(in srgb, var(--cipher) 80%, var(--ink) 20%); white-space: nowrap; }
+.lattice .ruler { position: absolute; z-index: 3; }
+.lattice .ruler.top { left: 0; right: 0; top: 0; height: 22px; background: linear-gradient(180deg, color-mix(in srgb, var(--void) 85%, transparent), transparent); }
+.lattice .ruler.left { top: 0; bottom: 0; left: 0; width: 26px; background: linear-gradient(90deg, color-mix(in srgb, var(--void) 85%, transparent), transparent); }
+.lattice .ruler i { position: absolute; background: color-mix(in srgb, var(--tile-edge) 60%, var(--ink) 40%); }
+.lattice .ruler.top i { top: 0; width: 1px; } .lattice .ruler.left i { left: 0; height: 1px; }
+.lattice .ruler b { position: absolute; font-family: var(--f-data); font-weight: 300; font-size: 8px; letter-spacing: .06em; color: color-mix(in srgb, var(--ink-dim) 85%, transparent); }
+.lattice .ruler.top b { top: 2px; } .lattice .ruler.left b { left: 3px; }
+.lattice .seam { position: absolute; background: color-mix(in srgb, var(--tile-edge) 45%, transparent); }
+
+/* mine hit = hazard tile (the corp's ICE, flagged by the corp's own UI) */
+.c.m.hit {
+  background: repeating-linear-gradient(-45deg, var(--warn) 0 5px, color-mix(in srgb, var(--void) 92%, var(--warn)) 5px 10px);
+  box-shadow: 0 0 0 1px var(--danger), 0 0 18px color-mix(in srgb, var(--danger) 55%, transparent);
+  color: var(--danger); clip-path: none;
+}
+.c.m.hit::after { content: ""; position: absolute; inset: 18%; background: var(--void); clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%); }
+.c.m.hit svg { position: relative; z-index: 1; width: 52%; height: 52%; filter: drop-shadow(-1px 0 0 var(--accent2)) drop-shadow(1px 0 0 var(--accent)); }
+.c.m.hit.march { animation: march .6s linear 2; background-size: 14.14px 14.14px; }
+@keyframes march { to { background-position: 14.14px 0; } }
+/* ---------- street deck HUD: jagged ---------- */
+/* Panels get irregular, asymmetric silhouettes (see CS.jag in screens.js): uneven cut corners,
+   bitten notches, sawtooth teeth, a 45-degree jog in one edge. Outline is drawn as SVG on top:
+   hairline everywhere, thick "hot" accent strokes on a couple of segments, plus a misregistered
+   ghost outline offset 4px in accent2. Nothing rotates; the mess is in the geometry. */
+.deck { transform: none; }
+.jag { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 2; }
+.jag .hair { fill: none; stroke: color-mix(in srgb, var(--accent) 40%, transparent); stroke-width: 1; }
+.jag .term { fill: var(--accent); }
+.jag .tick { stroke: color-mix(in srgb, var(--accent) 70%, transparent); stroke-width: 1; }
+.jag .hot { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: square; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 70%, transparent)); }
+.jag .ghost { fill: none; stroke: color-mix(in srgb, var(--accent2) 55%, transparent); stroke-width: 1; stroke-dasharray: 64 10 6 10; opacity: 0; }
+.screen.strain-1 .jag .ghost { opacity: .6; } .screen.strain-2 .jag .ghost { opacity: 1; }
+.grp.jagged > .panel::before, .grp.jagged > .panel::after { display: none; }
+.grp.jagged > .panel { border: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--void) 82%, transparent), color-mix(in srgb, var(--void) 66%, transparent)); }
+.tagl { display: inline-block; padding: 3px 14px 3px 11px; background: var(--tc, var(--accent)); color: var(--void);
+  font-family: var(--f-ui); font-weight: 700; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; line-height: 1.25;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%); }
+.tagl.out { background: none; color: var(--tc, var(--accent)); box-shadow: inset 0 0 0 1px var(--tc, var(--accent)); clip-path: none; }
+.slashes { position: absolute; width: var(--sw, 34px); height: 8px; pointer-events: none;
+  background: repeating-linear-gradient(-60deg, var(--sc, var(--accent)) 0 1.5px, transparent 1.5px 6px); opacity: .55; }
+/* links = memory-block cells (chunky, cut lower-right), not diamonds */
+.links { gap: 5px; }
+.link { width: 16px; height: 26px; transform: none; border: 0; background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%); }
+.link.lost { background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--danger) 70%, transparent) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1px var(--danger); opacity: .9; }
+.link.lost::after { display: none; }
+/* signal = health-bar treatment: big readout, slanted bar, hatched empty part, fine ticks below */
+.sig { display: grid; grid-template-columns: 104px 1fr; gap: 6px 16px; align-items: center; }
+.sig .read { grid-row: span 2; font-family: var(--f-data); font-weight: 800; font-size: 34px; line-height: 1; color: var(--mc, var(--accent)); text-shadow: 0 0 12px color-mix(in srgb, var(--mc, var(--accent)) 50%, transparent); }
+.sig .read small { font-size: 15px; font-weight: 600; margin-left: 2px; }
+.sigbar { position: relative; height: 14px; clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+  background: repeating-linear-gradient(-55deg, color-mix(in srgb, var(--mc, var(--accent)) 30%, transparent) 0 1.5px, transparent 1.5px 6px); }
+.sigbar i { position: absolute; left: 0; top: 0; bottom: 0; width: var(--p, 72%); background: var(--mc, var(--accent)); box-shadow: 0 0 10px var(--mc, var(--accent)); clip-path: polygon(0 0, 100% 0, calc(100% - 9px) 100%, 0 100%); }
+.sig .meter { height: 5px; gap: 2px; }
+/* ribbon cable: decorative 3-line connector with 45-degree jogs and square terminals */
+.cable { position: absolute; z-index: 19; pointer-events: none; overflow: visible; }
+.cable path { fill: none; stroke: color-mix(in srgb, var(--accent) 35%, transparent); stroke-width: 1.2; }
+.cable rect { fill: color-mix(in srgb, var(--accent) 80%, transparent); }
+/* visor curvature: HUD clusters sit on a slight perspective, like it is projected in your optics */
+.g-tl, .g-bl { transform: perspective(1400px) rotateY(6deg); transform-origin: 0 50%; }
+.g-score, .g-mm { transform: perspective(1400px) rotateY(-6deg); transform-origin: 100% 50%; }
+.g-sig { transform: perspective(1400px) rotateX(8deg); transform-origin: 50% 0; }
+.g-hints { transform: perspective(1400px) rotateX(-8deg); transform-origin: 50% 100%; }
+.micro { position: absolute; font-family: var(--f-data); font-weight: 300; font-size: 9px; letter-spacing: .08em; color: color-mix(in srgb, var(--ink-dim) 75%, transparent); white-space: nowrap; pointer-events: none; }
+.barcode { position: absolute; height: 14px; pointer-events: none; opacity: .55; }
+.barcode i { display: inline-block; height: 100%; background: var(--ink-dim); margin-right: 1px; vertical-align: top; }
+
+/* ---------- strain (cyberpsychosis): HUD and screen edges only, never the board ---------- */
+.strainfx { position: absolute; inset: 0; pointer-events: none; z-index: 45; opacity: 0; }
+.strainfx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse 72% 68% at 50% 50%, transparent 60%, color-mix(in srgb, var(--danger) 42%, transparent) 100%); }
+.screen.strain-1 .strainfx { opacity: 1; animation: beat 1s ease-out infinite; }
+.screen.strain-2 .strainfx { opacity: 1; animation: beat .5s ease-out infinite; }
+.screen.strain-2 .strainfx::before { background: radial-gradient(ellipse 70% 64% at 50% 50%, transparent 54%, color-mix(in srgb, var(--danger) 50%, transparent) 100%); }
+@keyframes beat { 0% { opacity: 1; } 16% { opacity: .55; } 28% { opacity: .9; } 100% { opacity: .5; } }
+.screen.strain-2 .deck { animation: jitter .083s steps(1) infinite; }
+.screen.strain-2 .deck .num, .screen.strain-2 .deck .lbl, .screen.strain-2 .deck .wordmark { text-shadow: -2px 0 0 color-mix(in srgb, var(--danger) 80%, transparent), 2px 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+.screen.strain-2.fx-scanlines::after { background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ink) 7%, transparent) 0 1px, transparent 1px 3px); }
+@keyframes jitter { 0% { translate: 0 0; } 25% { translate: 1px -1px; } 50% { translate: -1px 1px; } 75% { translate: 2px 0; } }
+.corrupt { color: var(--danger) !important; }
+.tear { position: absolute; left: 0; right: 0; z-index: 46; pointer-events: none; backdrop-filter: hue-rotate(160deg) saturate(2); }
+
+/* ---------- smash-cut title card ---------- */
+.smash { position: absolute; inset: 0; z-index: 97; pointer-events: none; overflow: hidden; }
+.smash .flash { position: absolute; inset: 0; background: var(--cc, var(--accent)); opacity: .5; }
+.smash .band { position: absolute; left: -10%; right: -10%; top: 50%; height: 40%; transform: translateY(-50%) rotate(-6deg); background: var(--cc, var(--accent)); overflow: hidden; }
+.smash .band::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 9px, color-mix(in srgb, var(--void) 22%, transparent) 9px 10px); }
+.smash .speed { position: absolute; height: 2px; background: color-mix(in srgb, var(--void) 70%, transparent); }
+.smash .txt { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%) skewX(-10deg); white-space: nowrap; text-align: center;
+  font-family: var(--f-ui); font-weight: 700; font-size: 210px; line-height: .9; letter-spacing: -.01em; color: var(--void); }
+.smash .txt.ghost { color: transparent; -webkit-text-stroke: 3px var(--cd, var(--ink)); transform: translate(calc(-50% + 14px), calc(-54% + 8px)) skewX(-10deg); opacity: .85; }
+.smash .sub { position: absolute; left: 50%; top: 50%; transform: translate(-50%, 118px) rotate(-6deg); display: flex; gap: 18px; align-items: center;
+  font-family: var(--f-data); font-weight: 600; font-size: 22px; letter-spacing: .14em; color: var(--void); white-space: nowrap; }
+.smash .sub .jp { font-size: 26px; letter-spacing: 0; }
+.smash.slice .band, .smash.slice .txt, .smash.slice .sub { clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%, 0 34%, 100% 34%, 100% 66%, 0 66%, 0 72%, 100% 72%, 100% 100%, 0 100%); }
+
+/* ---------- boot log ---------- */
+.boot { position: absolute; inset: 0; z-index: 90; background: #020203; padding: 80px 110px; font-family: var(--f-data); font-size: 17px; line-height: 1.75; color: var(--ink-dim); overflow: hidden; }
+.boot .ln { white-space: pre; }
+.boot .ln .ts { color: color-mix(in srgb, var(--ink-dim) 60%, transparent); margin-right: 18px; }
+.boot .ln .ok { color: var(--accent); }
+.boot .ln .hi { color: var(--ink); }
+.boot .ln .warn { color: var(--warn); }
+.boot .cur { display: inline-block; width: 10px; height: 18px; background: var(--accent); vertical-align: -3px; margin-left: 4px; }
+.boot .bar { position: absolute; left: 110px; right: 110px; bottom: 80px; height: 6px; background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.boot .bar i { display: block; height: 100%; width: 0; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.boot .skip { position: absolute; right: 110px; bottom: 100px; font-size: 13px; color: color-mix(in srgb, var(--ink-dim) 70%, transparent); }
+
+/* ---------- afterimages (sandevistan cascade) ---------- */
+.ghostcell { position: absolute; z-index: 7; pointer-events: none; box-shadow: inset 0 0 0 2px var(--gc), 0 0 12px color-mix(in srgb, var(--gc) 55%, transparent); background: color-mix(in srgb, var(--gc) 8%, transparent); mix-blend-mode: screen; }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen.strain-1 .strainfx, .screen.strain-2 .strainfx { animation: none; }
+  .screen.strain-2 .deck { animation: none; }
+}
+
+/* ---------- boot loader: a tiny board that solves itself ---------- */
+.bootload { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1.35); display: grid; justify-items: center; gap: 16px; z-index: 2; }
+.bootload .hdr { color: var(--accent); }
+.bootload .hdr .jp { font-size: 14px; }
+.bootload .key { display: flex; gap: 2px; font-family: var(--f-data); font-weight: 600; font-size: 22px; letter-spacing: .04em; color: color-mix(in srgb, var(--ink-dim) 70%, transparent); }
+.bootload .key b { font-weight: inherit; width: 1ch; text-align: center; }
+.bootload .key b.ok { color: var(--accent); text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent); }
+.bootload .key b.dash { color: var(--ink-dim); }
+.bootload .denied { position: absolute; left: 50%; top: 38%; translate: -50% -50%; visibility: hidden; padding: 10px 26px; background: var(--danger); color: var(--void);
+  font-family: var(--f-ui); font-weight: 700; font-size: 40px; letter-spacing: .12em; white-space: nowrap; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+.dumpwin { position: absolute; z-index: 1; width: 230px; padding: 8px 10px 10px; background: color-mix(in srgb, var(--void) 70%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); font-family: var(--f-data); font-size: 10px; line-height: 1.55; color: color-mix(in srgb, var(--accent) 65%, transparent); }
+.dumpwin .tt { color: var(--void); background: color-mix(in srgb, var(--accent) 80%, transparent); padding: 1px 6px; margin: -8px -10px 6px; font-weight: 600; letter-spacing: .08em; }
+.dumpwin .dump { height: 108px; overflow: hidden; white-space: pre; }
+.bootload .lg { display: grid; grid-template-columns: repeat(9, 30px); grid-auto-rows: 30px; gap: 3px; }
+.bootload .lt { display: grid; place-items: center; background: var(--tile); box-shadow: inset 1px 1px 0 var(--tile-edge);
+  clip-path: polygon(16% 0, 100% 0, 100% 100%, 0 100%, 0 16%); font-family: var(--f-data); font-size: 9px; color: var(--cipher); }
+.bootload .lt.on { background: var(--floor); clip-path: none; box-shadow: inset 0 0 0 1px var(--grid); font-weight: 800; font-size: 16px; color: var(--nc, transparent); text-shadow: 0 0 8px color-mix(in srgb, var(--nc, transparent) 60%, transparent); }
+.bootload .lt.fl svg { width: 55%; height: 55%; color: var(--warn); }
+.bootload .row { display: flex; gap: 18px; align-items: baseline; }
+.bootload .cap { font-family: var(--f-data); font-size: 13px; letter-spacing: .14em; color: var(--ink-dim); }
+.bootload .pc { font-family: var(--f-data); font-weight: 800; font-size: 26px; color: var(--accent); min-width: 4ch; text-align: right; }
