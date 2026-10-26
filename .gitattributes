@@ -1,0 +1,12 @@
+# Keep text files in LF on every OS. Godot writes LF, so without this a
+# Windows checkout (CRLF) shows Godot's own rewrites of project.godot and
+# *.import files as local changes, which then block `git pull`.
+* text=auto eol=lf
+
+# Binary assets: never touch line endings.
+*.png binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.woff2 binary
+*.wav binary
