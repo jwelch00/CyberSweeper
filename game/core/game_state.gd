@@ -26,7 +26,12 @@ var ended := false
 var started := false
 var over := false
 var links := 3
-var signal_level := 0.0
+## Signal in micro-units (exact integer drain, see Rules.drained_u).
+var signal_u := 0
+## Signal in points (0..signal_max), for display and tests.
+var signal_level: float:
+	get:
+		return float(signal_u) / Rules.MICRO
 var score := 0
 ## tally[n] = revealed cells showing n (n = 0..8). Score = sum of n * tally[n].
 var tally := PackedInt32Array([0, 0, 0, 0, 0, 0, 0, 0, 0])
@@ -52,7 +57,8 @@ func _init(p_seed: int, p_rules: Rules = null, p_immortal := false, p_mode: Mode
 	solver = Solver.from_rules(rules)
 	move_log.seed = seed
 	links = rules.start_links
-	signal_level = rules.signal_max
+	signal_u = rules.signal_max_u
+	move_log.tuning_hash = rules.tuning_hash()
 
 
 # --- player actions -----------------------------------------------------------
@@ -60,6 +66,7 @@ func _init(p_seed: int, p_rules: Rules = null, p_immortal := false, p_mode: Mode
 ## Left click on a hidden cell. The first click starts the run there.
 func reveal(c: Vector2i) -> MoveResult:
 	move_log.add(MoveLog.REVEAL, c.x, c.y)
+	move_log.action(MoveLog.REVEAL, c, elapsed_ms)
 	var res := MoveResult.new(MoveResult.Kind.REVEAL, c)
 	if over or board.is_revealed(c) or board.is_flagged(c):
 		res.kind = MoveResult.Kind.NOOP
@@ -84,6 +91,7 @@ func reveal(c: Vector2i) -> MoveResult:
 ## reveals every other hidden neighbour. Wrong flags can make this hit a mine.
 func chord(c: Vector2i) -> MoveResult:
 	move_log.add(MoveLog.CHORD, c.x, c.y)
+	move_log.action(MoveLog.CHORD, c, elapsed_ms)
 	var res := MoveResult.new(MoveResult.Kind.CHORD, c)
 	var targets := chord_targets(c)
 	if targets.is_empty():
@@ -118,6 +126,7 @@ func chord_targets(c: Vector2i) -> Array[Vector2i]:
 ## only; nothing in generation or the solver reads them.
 func flag(c: Vector2i) -> MoveResult:
 	move_log.add(MoveLog.FLAG, c.x, c.y)
+	move_log.action(MoveLog.FLAG, c, elapsed_ms)
 	var res := MoveResult.new(MoveResult.Kind.FLAG, c)
 	if over or not started or board.is_revealed(c):
 		res.kind = MoveResult.Kind.NOOP
@@ -134,28 +143,56 @@ func tick(ms: int) -> MoveResult:
 	if not started or over or ms <= 0:
 		return res
 	move_log.add(MoveLog.TICK, ms)
-	elapsed_ms += ms
+	var target := elapsed_ms + ms
 	if mode == Mode.GHOST:
+		elapsed_ms = target
 		return res
-	signal_level -= rules.drain_rate(elapsed_ms) * float(ms) / 1000.0
-	while signal_level <= 0.0 and not over:
+	# Drain exactly, finding the exact millisecond the signal runs dry each
+	# time, so neither the outcome nor when the run ends depends on how run
+	# time was sliced into ticks.
+	var t := elapsed_ms
+	while not over:
+		var drain := rules.drained_u(target) - rules.drained_u(t)
+		if signal_u > drain:
+			signal_u -= drain
+			t = target
+			break
+		t = _runs_dry(t, target, signal_u)
 		_lose_link(res)
-		signal_level += rules.signal_max
-	signal_level = clampf(signal_level, 0.0, rules.signal_max)
+		signal_u = 0 if over else rules.signal_max_u
+	elapsed_ms = t if over else target
+	if over:
+		_finish()
 	res.game_over = over
 	return res
+
+
+## First run time in (from, to] by which `amount` micro-units have drained.
+func _runs_dry(from: int, to: int, amount: int) -> int:
+	var base := rules.drained_u(from)
+	var lo := from
+	var hi := to
+	while hi - lo > 1:
+		var mid := (lo + hi) / 2
+		if rules.drained_u(mid) - base >= amount:
+			hi = mid
+		else:
+			lo = mid
+	return hi
 
 
 ## Ends the run now and banks the score (Ghost mode's "End run"; Arcade runs
 ## end when the links run out).
 func end_run() -> MoveResult:
 	move_log.add(MoveLog.END, 0)
+	move_log.action(MoveLog.END, Vector2i.ZERO, elapsed_ms)
 	var res := MoveResult.new(MoveResult.Kind.END)
 	if not started or over:
 		res.kind = MoveResult.Kind.NOOP
 		return res
 	over = true
 	ended = true
+	_finish()
 	res.game_over = true
 	return res
 
@@ -209,8 +246,8 @@ func _apply(rec: Dictionary, res: MoveResult) -> void:
 			safe_count += 1
 			deepest = maxi(deepest, board.depth(cell))
 	if safe_count > 0:
-		var refill := minf(rules.refill_cap_per_move, rules.refill_per_cell * safe_count)
-		signal_level = minf(rules.signal_max, signal_level + refill)
+		var refill := mini(rules.refill_cap_u, rules.refill_per_cell_u * safe_count)
+		signal_u = mini(rules.signal_max_u, signal_u + refill)
 	res.game_over = over
 
 
@@ -223,6 +260,13 @@ func _lose_link(res: MoveResult) -> void:
 	if links <= 0:
 		links = 0
 		over = true
+		_finish()
+
+
+## Records how the run ended, so a replay can check its score.
+func _finish() -> void:
+	move_log.end_ms = elapsed_ms
+	move_log.final_score = score
 
 
 func _after_move() -> void:

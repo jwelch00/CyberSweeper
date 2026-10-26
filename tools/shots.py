@@ -6,7 +6,7 @@
 
 Needs a display (any desktop; on a headless Linux box set DISPLAY to an Xvfb).
 Shots come from seeded bot runs, so they are the same every time:
-  gallery-1x.png / gallery-0.5x.png   every cell state in all five palettes
+  gallery-1x.png / gallery-0.5x.png   every cell state in all six palettes
   gameplay-<palette>.png              a NULL//SAINT run at 1x zoom
   zoom-0.5x.png / zoom-2x.png         the same board at the zoom limits
   ghost.png                           Ghost mode (no signal meter)
@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_tests as rt  # noqa: E402
 
 OUT = rt.OUT / "shots"
-PALETTES = ["signal", "hotwire", "root-access", "rustbelt", "icebreaker"]
+PALETTES = ["signal", "hotwire", "root-access", "rustbelt", "icebreaker", "plaintext"]
 BASE = ["--rendering-driver", "opengl3", "--resolution", "1920x1080", "--audio-driver", "Dummy"]
 
 

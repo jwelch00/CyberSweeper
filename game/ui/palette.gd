@@ -11,6 +11,8 @@ const ROLES: Array[String] = ["void", "floor", "grid", "tile", "tileEdge", "ciph
 var id: String
 var name: String
 var vibe: String
+## Built for color vision deficiency (Plaintext); the picker tags it.
+var accessibility := false
 var colors := {}                # role -> Color
 var numbers: Array[Color] = []  # numbers[0] is the color of a 1
 
@@ -27,6 +29,7 @@ static func load_all() -> Array[Palette]:
 		pal.id = p.id
 		pal.name = p.name
 		pal.vibe = p.get("vibe", "")
+		pal.accessibility = bool(p.get("accessibility", false))
 		for role in ROLES:
 			pal.colors[role] = Color.html(p.colors[role])
 		for hex in p.numbers:

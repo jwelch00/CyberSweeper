@@ -41,6 +41,7 @@ The structural motif is the **cut corner**: hidden cells cut top-left, panels an
 | `root-access` | Root access | Decrypt 10,000 tiles across all runs |
 | `rustbelt` | Rustbelt | Reach depth 300 in one run |
 | `icebreaker` | Icebreaker | Beat NULL//SAINT (Netrunner rival) |
+| `plaintext` | Plaintext | Always unlocked. Colorblind-safe: numbers 1-4 stay distinct under protanopia, deuteranopia and tritanopia; hidden vs revealed differ by brightness |
 
 Every number color clears 5.7:1 contrast against its palette's revealed floor.
 

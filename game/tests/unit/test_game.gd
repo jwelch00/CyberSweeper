@@ -85,7 +85,9 @@ func test_signal_drains_and_costs_a_link_at_zero() -> void:
 	var gs := _game()
 	var r := gs.rules
 	gs.tick(1000)
-	check(absf(gs.signal_level - (r.signal_max - r.drain_rate(1000))) < 1e-6, "one second of drain")
+	var drained := r.signal_max - gs.signal_level
+	check(absf(drained - float(r.drained_u(1000)) / Rules.MICRO) < 1e-6, "one second of drain")
+	check(drained > r.drain_rate(0) and drained < r.drain_rate(1000), "between the start and end rates")
 	var lost := 0
 	for i in 200:
 		lost += gs.tick(1000).links_lost
@@ -102,7 +104,7 @@ func test_signal_refill_is_capped_per_move() -> void:
 	var res := gs.reveal(_safe_move(gs))
 	var safe := res.revealed.size() - res.hits.size()
 	var expected := minf(gs.rules.signal_max, before + minf(gs.rules.refill_cap_per_move, gs.rules.refill_per_cell * safe))
-	check(absf(gs.signal_level - expected) < 1e-6, "refill %f vs %f" % [gs.signal_level, expected])
+	check(absf(gs.signal_level - expected) < 1e-5, "refill %f vs %f" % [gs.signal_level, expected])
 
 
 func test_no_drain_before_first_click() -> void:

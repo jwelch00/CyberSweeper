@@ -186,6 +186,38 @@
         "#FF5C7A",
         "#FFFFFF"
       ]
+    },
+    {
+      "id": "plaintext",
+      "name": "Plaintext",
+      "default": false,
+      "unlock": null,
+      "accessibility": true,
+      "vibe": "Built for color vision deficiency. Numbers 1-4 stay distinct under protanopia, deuteranopia and tritanopia, and hidden vs revealed cells differ by brightness, not hue. Always unlocked.",
+      "colors": {
+        "void": "#07080B",
+        "floor": "#0B0C10",
+        "grid": "#2A2E38",
+        "tile": "#343A47",
+        "tileEdge": "#5A6272",
+        "cipher": "#545C6C",
+        "ink": "#FFFFFF",
+        "inkDim": "#B0B5C2",
+        "accent": "#56B4E9",
+        "accent2": "#E69F00",
+        "warn": "#F0E442",
+        "danger": "#FF5A3C"
+      },
+      "numbers": [
+        "#42FADB",
+        "#FAFA42",
+        "#E78655",
+        "#9292FC",
+        "#F1AB9D",
+        "#E7CF55",
+        "#D2C1F6",
+        "#B5FC92"
+      ]
     }
   ],
   "type": {

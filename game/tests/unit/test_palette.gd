@@ -1,9 +1,11 @@
 extends TestCase
 
 
-func test_all_five_palettes_load_with_every_role() -> void:
+func test_all_six_palettes_load_with_every_role() -> void:
 	var all := Palette.load_all()
-	eq(all.map(func(p): return p.id), ["signal", "hotwire", "root-access", "rustbelt", "icebreaker"])
+	eq(all.map(func(p): return p.id), ["signal", "hotwire", "root-access", "rustbelt", "icebreaker", "plaintext"])
+	eq(all.filter(func(p): return p.accessibility).map(func(p): return p.id), ["plaintext"],
+		"Plaintext is the colorblind-safe palette")
 	for p in all:
 		for role in Palette.ROLES:
 			check(p.colors.has(role), "%s has %s" % [p.id, role])

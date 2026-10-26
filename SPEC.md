@@ -45,10 +45,40 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
 - Game over shows the score tally broken down by number value (count × value per number, then the total), run stats, the rival ladder with the player's run slotted in, and any palette unlocked this run.
 
 ## Palettes and unlockables
-- Five palettes, defined in `design/tokens/palettes.json`: Signal (default), Hotwire, Root access, Rustbelt, Icebreaker.
-- Unlocks (placeholders, retune after milestone 2): Hotwire = beat the Runner rival; Root access = decrypt 10,000 tiles across all runs; Rustbelt = reach depth 300 in one run; Icebreaker = beat the Netrunner rival.
+- Six palettes, defined in `design/tokens/palettes.json`: Signal (default), Hotwire, Root access, Rustbelt, Icebreaker, and Plaintext.
+- **Plaintext** (`"accessibility": true`) is the colorblind-safe palette.
+  - It's a **pre-launch requirement** (milestone 4).
+  - It's always unlocked: `null` in `game/data/unlocks.json`, like Signal.
+  - The palette picker shows it with a small "Colorblind-safe" tag.
+- Unlocks (thresholds approved after milestone 2, stored in `game/data/unlocks.json`; Arcade runs only):
+  - Hotwire = beat the Runner rival.
+  - Root access = decrypt 25,000 tiles across all runs.
+  - Rustbelt = reach depth 120 in one run.
+  - Icebreaker = beat the Netrunner rival.
 - Locked palettes show an "encrypted" preview, the unlock condition and progress (see `design/png/palettes.png`).
 - Save unlocks, settings, cumulative stats and local high scores to the OS-appropriate user data folder (`user://`). Fully offline: no network calls, ever.
+
+## Accessibility (milestone 4, pre-launch)
+- Color is never the only cue anywhere in the UI. Every state must also differ by shape, text or position, in every palette. This covers:
+  - signal states;
+  - lost links;
+  - mine hits vs flags;
+  - wrong flags;
+  - hover vs chord preview;
+  - locked vs unlocked palettes;
+  - rival beaten vs not;
+  - the minimap's categories.
+- Already true after milestone 3:
+  - Signal states change the meter's label as well as its color ("signal", "signal low", "signal critical").
+  - Lost links are outlined with a slash; live links are filled.
+  - Hits and flags are different glyphs, and hits also get a box.
+  - Wrong flags get an X.
+  - Hover gets an outline.
+- Still to fix in milestone 4:
+  - The chord preview is a tint only.
+  - The minimap tells zeros, numbers, flags and hits apart by color only.
+  - Check every new screen the same way.
+- Plaintext must keep numbers 1–4 distinct under protanopia, deuteranopia and tritanopia (per its design notes). Every palette keeps the 5.7:1 number contrast, which a unit test already enforces.
 
 ## Bot simulations and rivals
 - Headless bots at 3 skill levels, each with a per-move think time and an error rate so the signal pressure matters:
@@ -94,7 +124,7 @@ Each rival in `game/data/rivals.json` has a `bio`, a `taunt` and a `beaten` line
 1. Core logic, solver, no-50/50 generator, tests
 2. Bot simulations and difficulty-tuning report
 3. Rendering, input, HUD, game feel (match `design/`)
-4. Palettes, unlocks, save data, rivals leaderboard, remaining screens, Ghost mode (see below)
+4. Palettes (including Plaintext), unlocks, save data, rivals leaderboard, remaining screens, Ghost mode, accessibility pass (see above and below)
 5. Icon wiring and cross-platform builds
 6. Download page and deploy script
 

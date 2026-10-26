@@ -170,7 +170,8 @@ func _apply(cmd: Array) -> Dictionary:
 func _state() -> Dictionary:
 	return {
 		"started": _gs.started, "over": _gs.over, "origin": _gs.board.origin, "seed": seed,
-		"score": _gs.score, "links": _gs.links, "signal": _gs.signal_fraction(), "tiles": _gs.tiles,
+		"score": _gs.score, "links": _gs.links, "signal": _gs.signal_fraction(),
+		"signal_shown": _rules.signal_display(_gs.signal_fraction()), "tiles": _gs.tiles,
 		"elapsed_ms": _gs.elapsed_ms, "deepest": _gs.deepest, "tally": Array(_gs.tally),
 		"stuck": _gs.stuck_count, "hits": _gs.hits, "mode": _gs.mode, "ended": _gs.ended,
 	}

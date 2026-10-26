@@ -46,7 +46,8 @@ game/                  Godot project (open game/project.godot in the editor)
     board.gd           infinite chunked board, numbers, cascades
     solver.gd          the reference solver (3 tiers)
     generator.gd       mine placement, chunk proofs, repairs, backstop
-    game_state.gd      the API bots and UI call: reveal / chord / flag / tick
+    game_state.gd      the API bots and UI call: reveal / chord / flag / tick / end_run
+    move_log.gd        every call in order, plus replay files (version, tuning hash, timed actions)
     rules.gd           loads data/tuning.json
     bot.gd             headless player: the three rivals and the tuning profiles
     session.gd         runs a GameState on a worker thread for the UI
@@ -156,7 +157,7 @@ python tools/shots.py
 ```
 
 This renders seeded screenshots into `test-output/shots/`:
-- every cell state in all five palettes, at 1× and 0.5×;
+- every cell state in all six palettes, at 1× and 0.5×;
 - gameplay in each palette;
 - the zoom limits;
 - Ghost mode;
@@ -201,7 +202,17 @@ python tools/simulate.py --games 300 --sensitivity --report docs/tuning-report.m
 
 A reference ("decent human") run lasts a median 9.5 minutes, 6.6–11.3 for most runs, and scores a median 2,960.
 
-**Palette unlocks** live in `game/data/unlocks.json`:
+**The signal bar runs on a false scale** (`signal.display_curve` in `tuning.json`). It drains faster than the real signal while there's plenty left, then slower and slower toward empty:
+
+| Bar shows | Real signal left |
+| --- | --- |
+| 50% | 80% |
+| 30% | 66% |
+| 10% | 39% |
+
+The low (30%) and critical (10%) marks, the meter's pulse and the red vignette that creeps in from the screen edges all follow the bar you see. Only the display changes; the real drain the bots were tuned on is the same.
+
+**Palette unlocks** live in `game/data/unlocks.json`. Signal (the default) and **Plaintext** (colorblind-safe) are always unlocked. The rest unlock from Arcade runs only:
 - **Hotwire:** beat mx_halcyon.
 - **Root access:** decrypt 25,000 tiles across all runs.
 - **Rustbelt:** reach depth 120 in one run.
@@ -218,7 +229,7 @@ A reference ("decent human") run lasts a median 9.5 minutes, 6.6–11.3 for most
 - Clicking far outside the explored area is a voluntary guess. The chunks it touches lock as "islands" without a proof.
 - **Backstop:** if the solver ever finds no provably safe frontier cell, the next frontier click that isn't a proven mine is made safe. It does this by moving hidden mines so that every revealed number still matches. This should never happen, and it's logged if it does.
 
-A seed plus the move log reproduces a run exactly. Two players on the same seed share the start and most of the board, but can drift apart where one of them needed a reroll.
+A seed plus the move log reproduces a run exactly. The log is also replay-ready: `MoveLog.to_replay()` gives the version, tuning hash, mode, seed, every action with its run time, and the final score, and `MoveLog.play_replay()` reproduces the run from just that. The signal drain is an exact integer integral, so the result doesn't depend on frame timing. The replay viewer itself is a post-launch idea (`IDEAS.md`). Two players on the same seed share the start and most of the board, but can drift apart where one of them needed a reroll.
 
 ## Building
 

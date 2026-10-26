@@ -27,8 +27,11 @@ func test_unlocks_cover_every_palette() -> void:
 	var rivals := {}
 	for r in _json("res://data/rivals.json").rivals:
 		rivals[r.id] = true
-	eq(u.keys(), ["signal", "hotwire", "root-access", "rustbelt", "icebreaker"])
+	eq(u.keys(), ["signal", "hotwire", "root-access", "rustbelt", "icebreaker", "plaintext"])
 	check(u.signal == null, "signal is the default")
+	check(u.plaintext == null, "Plaintext, the colorblind-safe palette, is always unlocked")
+	var ids := Palette.load_all().map(func(p): return p.id)
+	eq(u.keys(), ids, "every palette in the tokens has an unlock entry")
 	for id in u:
 		var c: Variant = u[id]
 		if c == null:

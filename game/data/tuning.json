@@ -1,5 +1,5 @@
 {
-  "_about": "Every gameplay number. Placeholders until the milestone 2 bot runs tune them.",
+  "_about": "Every gameplay number, tuned in milestone 2. signal.display_curve bends the signal bar the player sees (it drains faster than real at first and slower near empty; 3.28 makes 50% shown = 80% real; 0 = linear). low/critical_fraction apply to the shown value.",
   "links": {
     "start": 3
   },
@@ -10,7 +10,8 @@
     "refill_per_cell": 1.5,
     "refill_cap_per_move": 25.0,
     "low_fraction": 0.30,
-    "critical_fraction": 0.10
+    "critical_fraction": 0.10,
+    "display_curve": 3.28
   },
   "density": {
     "base": 0.15,

@@ -76,6 +76,8 @@ func _ready() -> void:
 	hud.view = board
 	hud.rivals = _rivals
 	hud.density_for = func(depth: int) -> float: return rules.density(depth)
+	hud.low_fraction = rules.low_fraction
+	hud.critical_fraction = rules.critical_fraction
 	world.add_child(hud)
 	hud.minimap.view = board
 	overlay = GameOverOverlay.new()
@@ -116,6 +118,7 @@ func apply_palette(p: Palette) -> void:
 	cursor.palette = p
 	overlay.palette = p
 	(vignette.material as ShaderMaterial).set_shader_parameter("c_void", p.c("void"))
+	(vignette.material as ShaderMaterial).set_shader_parameter("c_danger", p.c("danger"))
 	var pm := post.material as ShaderMaterial
 	pm.set_shader_parameter("c_void", p.c("void"))
 	pm.set_shader_parameter("c_ink", p.c("ink"))
@@ -147,7 +150,8 @@ func new_run(seed := -1, p_mode: GameState.Mode = mode) -> void:
 	over = false
 	_links = rules.start_links
 	hud.lost_at = []
-	state = {"seed": session.seed, "links": _links, "signal": 1.0, "score": 0, "tiles": 0, "elapsed_ms": 0,
+	state = {"seed": session.seed, "links": _links, "signal": 1.0, "signal_shown": 1.0, "score": 0, "tiles": 0,
+		"elapsed_ms": 0,
 		"mode": mode, "started": false, "over": false}
 	hud.state = state
 	hud.mode = mode
@@ -417,6 +421,11 @@ func _update_effects() -> void:
 	pm.set_shader_parameter("aberration", ab)
 	var low := hud.low_signal and mode == GameState.Mode.ARCADE
 	pm.set_shader_parameter("scan_boost", 0.6 if low else 0.0)
+	var alarm := 0.0
+	if low:
+		alarm = Hud.alarm_level(float(state.get("signal_shown", 1.0)), board.clock_ms, rules.low_fraction,
+			rules.critical_fraction, settings.reduced_motion)
+	(vignette.material as ShaderMaterial).set_shader_parameter("alarm", alarm)
 	if low:
 		sfx.low(board.clock_ms)
 
@@ -445,6 +454,14 @@ func screenshot(args: Dictionary) -> void:
 	else:
 		board.cam.center = Vector2(state.get("last", origin)) + Vector2(0.5, 0.5)
 	cursor.show = false
+	if args.has("signal"):
+		# Show the HUD and vignette as they look at this displayed signal level.
+		state["signal_shown"] = float(args.signal)
+		hud.state = state
+		set_process(false)
+		hud.low_signal = float(args.signal) < rules.low_fraction
+		(vignette.material as ShaderMaterial).set_shader_parameter("alarm",
+			Hud.alarm_level(float(args.signal), 0.0, rules.low_fraction, rules.critical_fraction, false))
 	if args.get("hover", "auto") == "auto":
 		_auto_hover()
 	if args.has("pop"):

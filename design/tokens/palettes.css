@@ -114,3 +114,26 @@
   --n7: #FF5C7A;
   --n8: #FFFFFF;
 }
+
+[data-palette="plaintext"] {
+  --void: #07080B;
+  --floor: #0B0C10;
+  --grid: #2A2E38;
+  --tile: #343A47;
+  --tile-edge: #5A6272;
+  --cipher: #545C6C;
+  --ink: #FFFFFF;
+  --ink-dim: #B0B5C2;
+  --accent: #56B4E9;
+  --accent2: #E69F00;
+  --warn: #F0E442;
+  --danger: #FF5A3C;
+  --n1: #42FADB;
+  --n2: #FAFA42;
+  --n3: #E78655;
+  --n4: #9292FC;
+  --n5: #F1AB9D;
+  --n6: #E7CF55;
+  --n7: #D2C1F6;
+  --n8: #B5FC92;
+}

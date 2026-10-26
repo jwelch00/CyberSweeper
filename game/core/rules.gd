@@ -15,6 +15,7 @@ var refill_per_cell: float
 var refill_cap_per_move: float
 var low_fraction: float
 var critical_fraction: float
+var display_curve: float
 
 var density_base: float
 var density_per_cell: float
@@ -31,6 +32,13 @@ var attempts_local: int
 var attempts_chunk: int
 var attempts_neighbour: int
 var rescue_radii: Array[int] = []
+
+## Signal in whole micro-units (1 = a millionth of a signal point), so the
+## drain is exact integer arithmetic.
+const MICRO := 1000000
+var signal_max_u: int
+var refill_per_cell_u: int
+var refill_cap_u: int
 
 var _thresholds := PackedInt64Array()   # mine threshold per depth until the cap
 var _threshold_cap := 0
@@ -58,6 +66,7 @@ static func from_dict(d: Dictionary) -> Rules:
 	r.refill_cap_per_move = float(d.signal.refill_cap_per_move)
 	r.low_fraction = float(d.signal.low_fraction)
 	r.critical_fraction = float(d.signal.critical_fraction)
+	r.display_curve = float(d.signal.get("display_curve", 0.0))
 	r.density_base = float(d.density.base)
 	r.density_per_cell = float(d.density.per_cell)
 	r.density_max = float(d.density.max)
@@ -72,6 +81,9 @@ static func from_dict(d: Dictionary) -> Rules:
 	r.attempts_neighbour = int(d.generator.attempts_neighbour)
 	for v in d.generator.rescue_radii:
 		r.rescue_radii.append(int(v))
+	r.signal_max_u = roundi(r.signal_max * MICRO)
+	r.refill_per_cell_u = roundi(r.refill_per_cell * MICRO)
+	r.refill_cap_u = roundi(r.refill_cap_per_move * MICRO)
 	r._build_thresholds()
 	return r
 
@@ -97,9 +109,41 @@ func mine_threshold(depth: int) -> int:
 	return _thresholds[depth]
 
 
+## The signal bar the player sees for a real signal fraction. It runs on a
+## false scale: it drains faster than real while there's plenty left and
+## slower and slower toward empty (with the default curve, 50% shown is 80%
+## real and 10% shown is about 39% real). Display only; the drain is real.
+func signal_display(fraction: float) -> float:
+	var f := clampf(fraction, 0.0, 1.0)
+	if display_curve <= 0.0:
+		return f
+	return (exp(display_curve * f) - 1.0) / (exp(display_curve) - 1.0)
+
+
 ## Signal drained per second after this much run time.
 func drain_rate(elapsed_ms: int) -> float:
 	return drain_per_sec * (1.0 + drain_growth_per_min * float(elapsed_ms) / 60000.0)
+
+
+## Total signal drained (micro-units) from the start of the run to elapsed_ms:
+## the exact integral of drain_rate, floored. The drain over any span is the
+## difference of two of these, so it doesn't matter how run time was sliced
+## into ticks: a replay that only knows when each action happened reproduces
+## the run exactly, on every platform.
+func drained_u(elapsed_ms: int) -> int:
+	var t := float(elapsed_ms) / 1000.0
+	return int(floor(drain_per_sec * MICRO * (t + drain_growth_per_min * t * t / 120.0)))
+
+
+## Short fingerprint of every gameplay number (ignores "_" notes). Replays
+## record it and refuse to play under different tuning.
+func tuning_hash() -> String:
+	var clean := {}
+	for k in data:
+		if not str(k).begins_with("_"):
+			clean[k] = data[k]
+	var bytes := JSON.stringify(clean, "", true).to_utf8_buffer()
+	return "%08x" % CsHash.fold_bytes(CsHash.mix32(bytes.size()), bytes)
 
 
 func _build_thresholds() -> void:

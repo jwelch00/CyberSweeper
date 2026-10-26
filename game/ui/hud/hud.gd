@@ -17,6 +17,8 @@ var started := false
 var density_for := func(_depth: int) -> float: return 0.0
 var lost_at := []   # clock_ms when each link was lost (index 0..2), for the shatter
 var low_signal := false
+var low_fraction := 0.30
+var critical_fraction := 0.10
 ## Ghost mode has no signal meter and doesn't race the rivals.
 var mode: GameState.Mode = GameState.Mode.ARCADE
 
@@ -160,19 +162,22 @@ func _draw_link(ci: CanvasItem, c: Vector2, alive: bool, index: int) -> void:
 func _draw_sig(p: CutPanel) -> void:
 	if palette == null:
 		return
-	var f := float(state.get("signal", 1.0))
+	# What the player sees (the false scale), not the real fraction.
+	var f := float(state.get("signal_shown", state.get("signal", 1.0)))
 	var role := "accent"
-	if f < 0.10:
+	if f < critical_fraction:
 		role = "danger"
-	elif f < 0.30:
+	elif f < low_fraction:
 		role = "warn"
-	low_signal = f < 0.30 and bool(state.get("started", false)) and not bool(state.get("over", false))
+	low_signal = f < low_fraction and bool(state.get("started", false)) and not bool(state.get("over", false))
 	var mc := palette.c(role)
 	var pulse := 1.0
 	if low_signal:
-		var hz := 2.0 if f < 0.10 else 1.0
+		var hz := 2.0 if f < critical_fraction else 1.0
 		pulse = 0.65 + 0.35 * (0.5 + 0.5 * cos(view.clock_ms / 1000.0 * TAU * hz))
-	_lbl(p, Vector2(20, 30), "signal")
+	# Text cue too, so the state never relies on color alone (components sheet).
+	var label := "signal critical" if role == "danger" else ("signal low" if role == "warn" else "signal")
+	_lbl(p, Vector2(20, 30), label)
 	var pct := "%d%%" % roundi(f * 100.0)
 	var pw := HudText.width(_data[2], pct, 15)
 	p.draw_string(_data[2], Vector2(p.size.x - 20 - pw, 30), pct, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, mc)
@@ -305,3 +310,17 @@ func _draw_mm(p: CutPanel) -> void:
 	var t := HudText.thousands(int(state.get("tiles", 0)))
 	var tw := HudText.width(_data[1], t, 14)
 	p.draw_string(_data[1], Vector2(p.size.x - 12 - tw, 24), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, palette.c("inkDim"))
+
+
+## Strength (0..1) of the red low-signal vignette for the signal shown: none
+## above the low mark, growing to full at empty, pulsing like the meter (1 Hz
+## when low, 2 Hz when critical; steady with reduced motion).
+static func alarm_level(shown: float, clock_ms: float, low: float, critical: float, reduced: bool) -> float:
+	if shown >= low:
+		return 0.0
+	var strength := clampf((low - shown) / low, 0.0, 1.0)
+	var pulse := 0.5
+	if not reduced:
+		var hz := 2.0 if shown < critical else 1.0
+		pulse = 0.5 + 0.5 * cos(clock_ms / 1000.0 * TAU * hz)
+	return strength * (0.55 + 0.45 * pulse)
