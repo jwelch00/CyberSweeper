@@ -95,6 +95,33 @@ Some nodes on the board are specially highlighted. Decrypting one unlocks a lore
 - **Save data:** a `lore` list of unlocked ids and an `unseen` list for the "New" tag, the same pattern as palettes in `Profile`.
 - **Content:** a `lore.json` with each entry's id, category, title, text and unlock rule, tested like `rivals.json`: every entry reachable, the text fits its screen.
 
+## Live hacking events
+
+The lore: every run is a scheduled hacking event, hosted by a fringe netrunner group. Everyone in the event keeps playing until they get iced, and the rivals are in the same event as you, so the board is live.
+
+- **Scores move every run.** After each run, every rival's score is a fresh draw near their typical score, and that's the end-game leaderboard. There's never a set number to beat: you can score 7,013 and still lose to a NULL//SAINT who posted 7,020 tonight. It'll feel unfair, and that's how it goes.
+- **A live HUD leaderboard** under the score. Every rival starts the run at 0 and climbs while you play. They swap places now and then, with some obvious skyrockets and stragglers.
+- **VESPER and NULL//SAINT** run neck and neck at the top until you beat them.
+- **ICED:** once you pass a rival, their score keeps rising a little, then their row is crossed out with ICED over it.
+- **The game over** shows the event's final standings.
+
+### Notes for whoever builds it
+
+- **The rivals' climbs can come from real bot runs.** `tools/simulate.py` already plays each rival's bot through the real game, in simulated time. Recording score over time for a few dozen runs per rival gives real curves: cascades are the skyrockets, slow thinkers the stragglers. Each run picks one curve per rival from its seed, so a seed always gives the same event and replays still verify.
+- **Keep the draws honest:**
+  - draw each rival's final score from that bot's own score spread, narrowed so it reads as a good or bad night, not a different rival;
+  - never react to the player's score (no rubber-banding), or it stops feeling like a busy event and starts feeling rigged.
+
+  The one exception is the ICED moment: after you pass someone they creep up a little, but never back past you.
+- **"Beating" a rival needs a rule.** With the ICED moment, passing someone is final: they can't come back, so passing them is beating them, and that's when RIVAL DOWN plays. Rivals you never pass keep climbing to their final score, and the game over compares against that.
+- **Unlocks:** Hotwire and Icebreaker say "beat mx_halcyon" and "beat NULL//SAINT". Decide whether that means beating that run's draw (a little luck) or keeping each rival's typical score as the fixed unlock line, with the event board as the drama. Either way, re-check the calibration (the expert bot beats NULL//SAINT about one run in five) with the simulator.
+- **HUD space and calm:** eight rows is a lot under the score. A window like the game-over ladder fits better: the top rival, plus the rows around you. Place swaps should animate gently and follow reduce motion. ICED is text and a strike-through, never color alone.
+- **Unchanged:** it's still pure minesweeper. The event is presentation: it adds no resource and changes no rule. Ghost mode stays rival-free. The Rivals screen keeps each rival's typical score and bio.
+- **Lore hooks:**
+  - the group running the events could be tied to the nine seconds the lattice went dark;
+  - the game over could say ICED instead of LINK SEVERED. That changes `design/MOTION.md`'s card, so it needs a design proposal first.
+- **Compared with Versus mode:** Versus races one rival on a mirrored board. An event races everyone, each on their own board, so it needs none of Versus's identical-board work.
+
 ## More ideas
 
 ### Gameplay
