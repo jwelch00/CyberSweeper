@@ -3,6 +3,7 @@
 
     python tools/shots.py            # everything, into test-output/shots/
     python tools/shots.py --quick    # gallery + one gameplay shot
+    python tools/shots.py --site     # the download page's screenshot, site/screenshot.webp
 
 Needs a display (any desktop; on a headless Linux box set DISPLAY to an Xvfb).
 Shots come from seeded bot runs and a pinned motion clock, so they are the
@@ -53,11 +54,24 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--godot")
     ap.add_argument("--quick", action="store_true")
+    ap.add_argument("--site", action="store_true", help="re-take site/screenshot.webp for the download page")
     args = ap.parse_args()
     godot = rt.find_godot(args.godot)
     rt.ensure_import(godot)
     OUT.mkdir(parents=True, exist_ok=True)
     run = ["--seed", "7", "--bot", "netrunner", "--turns", "300"]
+    if args.site:
+        # The design's hero image is the Signal gameplay shot; the page embeds a
+        # 1600 px WebP of the real one. Commit the result.
+        png = OUT / "site-gameplay.png"
+        ok = shot(godot, ["--shot", str(png), "--pop"] + run)
+        dest = rt.ROOT / "site" / "screenshot.webp"
+        code, out = rt.run_godot(godot, ["-s", "res://dev/webp.gd", "--", "--in", str(png), "--out", str(dest),
+                                         "--width", "1600", "--quality", "0.82"], 120)
+        ok = ok and code == 0 and dest.exists()
+        print(f"  site/screenshot.webp {dest.stat().st_size / 1e3:.0f} KB" if ok else out[-2000:])
+        print("PASS" if ok else "FAIL")
+        return 0 if ok else 1
     ok = shot(godot, ["--gallery", str(OUT / "gallery.png")])
     ok = shot(godot, ["--shot", str(OUT / "gameplay-signal.png"), "--pop"] + run) and ok
     if not args.quick:

@@ -12,3 +12,6 @@ dist/
 # Python
 __pycache__/
 *.pyc
+
+# The download site's address and tunnel: stays on the server, never committed
+deploy/site.env

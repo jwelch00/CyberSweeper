@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CyberSweeper: infinite Minesweeper, never a coin flip</title>
+<meta name="description" content="Minesweeper on an infinite board with a cyberpunk look. Three links, a draining signal, and you will never be forced to guess. Free for Windows, macOS and Linux; plays fully offline.">
+<link rel="icon" href="{{FAVICON}}">
+<!--
+  CyberSweeper's download page, built by tools/build.py from site/index.html
+  (design: design/mockups/download-page.html). Everything is inline: the CSS,
+  the script, the fonts, the icon and the screenshot. It loads nothing from
+  anywhere else.
+-->
+<style>
+{{PALETTE_CSS}}
+{{CS_CSS}}
+</style>
+<style>
+  body { position: relative; }
+  body::after { content: ""; position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ink) 2.5%, transparent) 0 1px, transparent 1px 3px); }
+  .wrap { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 0 40px; }
+  .bgfield { position: absolute; left: 0; right: 0; top: 0; height: 900px; overflow: hidden; z-index: 0; --cell: 44px; opacity: .55;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%); }
+  .bgfield::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--void) 0%, color-mix(in srgb, var(--void) 85%, transparent) 45%, color-mix(in srgb, var(--void) 30%, transparent) 100%); }
+
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 28px 0; }
+  .top .mark { display: flex; align-items: center; gap: 12px; font-family: var(--f-data); font-size: 13px; color: var(--ink-dim); }
+  .top .mark img { width: 44px; height: 44px; }
+  .top nav { display: flex; gap: 32px; font-size: 16px; font-weight: 500; }
+  .top nav a { color: var(--ink-dim); text-decoration: none; }
+  .top nav a:hover { color: var(--ink); }
+
+  .hero { display: grid; grid-template-columns: .9fr 1.3fr; gap: 56px; align-items: center; padding: 70px 0 110px; }
+  .hero h1 { font-size: 84px; line-height: .95; }
+  .lede { margin-top: 26px; font-size: 22px; line-height: 1.5; color: var(--ink); max-width: 34ch; }
+  .cta { margin-top: 40px; }
+  .cta .btn { height: 68px; font-size: 22px; padding: 0 34px; }
+  .cta .btn svg { width: 22px; height: 22px; }
+  .meta { margin-top: 14px; font-family: var(--f-data); font-size: 13px; color: var(--ink-dim); white-space: pre; }
+  .others { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 16px; color: var(--ink-dim); }
+  .others a { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; color: var(--ink); text-decoration: none; font-weight: 600; box-shadow: inset 0 0 0 1px var(--tile-edge); clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px); }
+  .others a:hover { box-shadow: inset 0 0 0 1px var(--accent); }
+  .phone { display: none; margin-top: 40px; font-size: 18px; line-height: 1.5; color: var(--ink); max-width: 34ch; }
+  .on-phone .phone { display: block; }
+  .on-phone .cta { display: none; }
+  .offline { margin-top: 28px; font-size: 16px; color: var(--ink-dim); display: flex; gap: 10px; align-items: center; }
+  .offline i { flex: none; width: 8px; height: 8px; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); transform: rotate(45deg); }
+  .shot { position: relative; padding: 10px; background: var(--void); box-shadow: inset 0 0 0 1px var(--tile-edge), 0 30px 80px color-mix(in srgb, var(--accent) 12%, transparent);
+    clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  section { padding: 80px 0; border-top: 1px solid var(--grid); }
+  h2 { font-size: 40px; font-weight: 700; }
+  .sub { margin-top: 10px; font-size: 19px; color: var(--ink-dim); max-width: 62ch; line-height: 1.5; }
+
+  .rules { margin-top: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; }
+  .rule .ico { height: 64px; display: flex; align-items: center; gap: 6px; --cell: 52px; }
+  .rule h3 { margin-top: 20px; font-size: 22px; font-weight: 700; }
+  .rule p { margin-top: 8px; font-size: 17px; line-height: 1.5; color: var(--ink-dim); }
+
+  .rivals { margin-top: 40px; display: grid; gap: 6px; max-width: 900px; }
+  .rv { display: grid; grid-template-columns: 140px 1fr 160px 220px; align-items: center; height: 72px; padding: 0 26px; background: color-mix(in srgb, var(--tile) 75%, transparent); }
+  .rv .tier { font-size: 15px; font-weight: 600; color: var(--ink-dim); text-transform: capitalize; }
+  .rv .who { font-size: 22px; font-weight: 700; }
+  .rv .pts { font-family: var(--f-data); font-weight: 800; font-size: 26px; text-align: right; padding-right: 30px; }
+  .rv .prize { font-size: 15px; color: var(--ink-dim); }
+  .rv .prize b { color: var(--accent2); font-weight: 600; }
+  .rv.top { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 60%, transparent); background: color-mix(in srgb, var(--danger) 8%, var(--tile)); }
+  .rv.top .who, .rv.top .pts { color: var(--danger); }
+
+  .controls { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 56px; max-width: 1000px; }
+  .ctl { display: flex; align-items: center; gap: 16px; font-size: 18px; }
+  .ctl .keys { min-width: 210px; display: flex; gap: 6px; }
+  .ctl .kbd { font-size: 14px; padding: 6px 10px; color: var(--ink); opacity: 1; border-color: var(--tile-edge); background: var(--tile); white-space: nowrap; }
+
+  .os { margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .oscard { padding: 30px; box-shadow: inset 0 0 0 1px var(--tile-edge); background: color-mix(in srgb, var(--tile) 40%, transparent); }
+  .oscard.detected { box-shadow: inset 0 0 0 2px var(--accent); }
+  .oscard h3 { font-size: 24px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .oscard h3 small { display: none; font-size: 13px; font-weight: 600; color: var(--void); background: var(--accent); padding: 3px 9px; }
+  .oscard.detected h3 small { display: inline; }
+  .oscard .file { margin-top: 6px; font-family: var(--f-data); font-size: 13px; color: var(--ink-dim); line-height: 1.6; }
+  .oscard ol { margin-top: 20px; padding-left: 20px; display: grid; gap: 10px; font-size: 17px; line-height: 1.5; color: var(--ink); }
+  .oscard code { font-family: var(--f-data); font-size: 14px; color: var(--accent); overflow-wrap: anywhere; }
+  .oscard .btn { margin-top: 24px; height: 48px; font-size: 17px; }
+
+  .sums { margin-top: 30px; font-family: var(--f-data); font-size: 14px; line-height: 2; color: var(--ink-dim); white-space: pre; overflow-x: auto; }
+  .sums b { color: var(--ink); font-weight: 600; }
+  .verify { margin-top: 18px; font-size: 16px; color: var(--ink-dim); line-height: 1.6; }
+  .verify code { font-family: var(--f-data); font-size: 14px; color: var(--ink); }
+  .verify a { color: var(--accent); }
+
+  footer { padding: 50px 0 70px; border-top: 1px solid var(--grid); display: flex; justify-content: space-between; gap: 24px; font-size: 15px; color: var(--ink-dim); }
+
+  @media (max-width: 900px) {
+    .wrap { padding: 0 16px; }
+    .hero { grid-template-columns: 1fr; padding: 30px 0 60px; }
+    .hero h1 { font-size: 46px; }
+    .rules, .os, .controls { grid-template-columns: 1fr; }
+    .rv { grid-template-columns: 1fr auto; grid-template-areas: "who pts" "tier prize"; height: auto; padding: 16px; gap: 4px 12px; }
+    .rv .who { grid-area: who; } .rv .pts { grid-area: pts; padding-right: 0; }
+    .rv .tier { grid-area: tier; } .rv .prize { grid-area: prize; text-align: right; }
+    .ctl .keys { min-width: 0; }
+    .top nav { display: none; }
+    footer { flex-direction: column; gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="bgfield" aria-hidden="true"><div class="board-viewport" id="bg"></div></div>
+<div class="wrap">
+  <div class="top">
+    <span class="mark"><img src="{{ICON}}" alt="CyberSweeper icon">v{{VERSION}}</span>
+    <nav><a href="#how">How it plays</a><a href="#rivals">Rivals</a><a href="#install">Install</a><a href="#checksums">Checksums</a></nav>
+  </div>
+
+  <div class="hero">
+    <div>
+      <h1 class="wordmark">CYBER<br>SWEEPER</h1>
+      <p class="lede">Minesweeper on an infinite board. Three links, a draining signal, and one promise: you will never be forced to guess.</p>
+      <div class="cta">
+        <a class="btn" id="cta" href="{{WINDOWS_HREF}}" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>
+          <span id="cta-label">Download for Windows</span>
+        </a>
+        <div class="meta" id="cta-meta">{{WINDOWS_FILE}}   {{WINDOWS_SIZE}}   v{{VERSION}}</div>
+      </div>
+      <p class="phone">CyberSweeper is for computers: Windows, macOS and Linux. Grab it on one of those.</p>
+      <div class="others" id="others">Also for <a href="{{MACOS_HREF}}" download>macOS</a><a href="{{LINUX_HREF}}" download>Linux</a></div>
+      <div class="offline"><i></i>Plays fully offline. No installer, no account, nothing phones home.</div>
+    </div>
+    <div class="shot"><img src="{{SCREENSHOT}}" width="{{SCREENSHOT_W}}" height="{{SCREENSHOT_H}}" alt="CyberSweeper gameplay: a field of decrypted numbers meeting encrypted cells, with the signal meter, score and minimap"></div>
+  </div>
+
+  <section id="how">
+    <h2>How it plays</h2>
+    <p class="sub">It's Minesweeper with no edges. Push outward as far as you can before your links run out. Or pick Ghost mode: no signal, no clock, and you end the run when you like.</p>
+    <div class="rules">
+      <div class="rule"><div class="ico"><div class="links"><i class="link"></i><i class="link"></i><i class="link lost"></i></div></div>
+        <h3>Three links</h3><p>Hit a mine and you lose a link. The mine stays marked and you keep going. Lose all three and the run ends.</p></div>
+      <div class="rule"><div class="ico"><div class="c r" data-n="3">3</div><div class="c r" data-n="1">1</div><div class="c r" data-n="1">1</div></div>
+        <h3>Every number counts</h3><p>Your score is the sum of every number you uncover. One 3 is worth three 1s, so the dangerous ground pays best.</p></div>
+      <div class="rule"><div class="ico"><div class="c h hover" data-b="7F"></div></div>
+        <h3>Never a coin flip</h3><p>The board is built so there is always a cell you can prove is safe. If you're guessing, there's a move you missed.</p></div>
+      <div class="rule"><div class="ico" style="width: 100%"><div class="meter" style="width: 100%" id="m"></div></div>
+        <h3>Keep the signal up</h3><p>Signal drains while you think and refills as you reveal. Mines pack tighter the farther you get from the start.</p></div>
+    </div>
+  </section>
+
+  <section id="rivals">
+    <h2>Rivals to beat</h2>
+    <p class="sub">Seven rivals ship on your leaderboard, from lil.byte, whom anyone can beat, up to NULL//SAINT. Each score is that rival's typical run over 300 seeded games. Beat them to unlock palettes.</p>
+    <div class="rivals">
+{{RIVALS}}
+    </div>
+  </section>
+
+  <section>
+    <h2>Controls</h2>
+    <div class="controls">
+      <div class="ctl"><span class="keys"><span class="kbd">Left click</span></span>Reveal a cell</div>
+      <div class="ctl"><span class="keys"><span class="kbd">Right click</span></span>Place or remove a flag</div>
+      <div class="ctl"><span class="keys"><span class="kbd">Left click a number</span></span>Open its neighbors once all its flags are placed</div>
+      <div class="ctl"><span class="keys"><span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span></span>Pan the board</div>
+      <div class="ctl"><span class="keys"><span class="kbd">Drag</span></span>Pan the board</div>
+      <div class="ctl"><span class="keys"><span class="kbd">Wheel</span></span>Zoom in and out</div>
+      <div class="ctl"><span class="keys"><span class="kbd">Esc</span></span>Pause (the board hides while you're away)</div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <p class="sub">Download, unzip, play. The builds aren't code-signed yet, so your OS will ask once.</p>
+    <div class="os">
+      <div class="oscard detected" data-os="windows"><h3>Windows <small>Your system</small></h3><div class="file">Windows 10 or 11, 64-bit</div>
+        <ol><li>Unzip {{WINDOWS_FILE}} anywhere.</li><li>Run <code>CyberSweeper.exe</code> in the CyberSweeper folder.</li><li>If SmartScreen says it protected your PC, choose More info, then Run anyway.</li></ol>
+        <a class="btn" href="{{WINDOWS_HREF}}" download>Download for Windows</a></div>
+      <div class="oscard" data-os="macos"><h3>macOS <small>Your system</small></h3><div class="file">{{MACOS_MIN}}</div>
+        <ol><li>Unzip it, then drag CyberSweeper into Applications if you like.</li><li>Open it once. On macOS 15 or later, when it's blocked, go to System Settings, Privacy &amp; Security, and choose Open Anyway. On older versions, right-click the app and choose Open.</li></ol>
+        <a class="btn ghost" href="{{MACOS_HREF}}" download>Download for macOS</a></div>
+      <div class="oscard" data-os="linux"><h3>Linux <small>Your system</small></h3><div class="file">x86_64, any modern distro</div>
+        <ol><li>Extract with <code>tar xzf {{LINUX_FILE}}</code>.</li><li>Run <code>./CyberSweeper.x86_64</code> in the CyberSweeper folder.</li><li>If it won't launch, run <code>chmod +x CyberSweeper.x86_64</code> first.</li></ol>
+        <a class="btn ghost" href="{{LINUX_HREF}}" download>Download for Linux</a></div>
+    </div>
+  </section>
+
+  <section id="checksums">
+    <h2>Checksums</h2>
+    <p class="sub">SHA-256, so you can confirm the download wasn't damaged or swapped.</p>
+    <div class="sums">{{SUMS}}</div>
+    <p class="verify">Check with <code>certutil -hashfile CyberSweeper-windows.zip SHA256</code> on Windows, <code>shasum -a 256</code> on a Mac, or <code>sha256sum -c <a href="SHA256SUMS">SHA256SUMS</a></code> on Linux.</p>
+  </section>
+
+  <footer><span>CyberSweeper v{{VERSION}}. This server only hosts the download; the game never connects to anything.</span><span>Type: Chakra Petch and Martian Mono, SIL OFL 1.1. Licenses ship in each download.</span></footer>
+</div>
+<script>
+{{BOARD_JS}}
+</script>
+<script>
+  // The background board and the signal meter, as in the design mockup.
+  CS.injectGlyphs();
+  document.getElementById("m").innerHTML = Array.from({ length: 22 }, (_, i) => `<i class="${i < 15 ? "on" : ""}"></i>`).join("");
+  const st = CS.makeBoard({ W: 40, H: 22, seed: 99, density: 0.16, start: [30, 7], blobs: [{ x: 30, y: 7, r: 5.5 }, { x: 35, y: 12, r: 4 }], noise: 0.8, flagRate: 0.9, frontierFlagRate: 0.3 });
+  CS.render(document.getElementById("bg"), st, { x0: 6, y0: 0, cols: 34, rows: 20, px: -20, py: -20 });
+
+  // Highlight the visitor's system: the big button, "Also for", and its
+  // install card. Without this script the page defaults to Windows.
+  (function () {
+    const FILES = {{FILES_JSON}};
+    const ua = navigator.userAgent || "";
+    const uad = navigator.userAgentData;
+    const plat = (uad && uad.platform) || navigator.platform || "";
+    const phone = (uad && uad.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (/Mac/.test(plat) && navigator.maxTouchPoints > 1);
+    const all = ["windows", "macos", "linux"];
+    const link = (os) => `<a href="${FILES[os].href}" download>${FILES[os].label}</a>`;
+    if (phone) {
+      document.body.classList.add("on-phone");
+      document.getElementById("others").innerHTML = "Get it for " + all.map(link).join("");
+      document.querySelectorAll(".oscard").forEach((c) => c.classList.remove("detected"));
+      return;
+    }
+    const s = plat + " " + ua;
+    const os = /Win/i.test(s) ? "windows" : /Mac/i.test(s) ? "macos" : /Linux|X11|CrOS/i.test(s) ? "linux" : "windows";
+    const f = FILES[os];
+    const cta = document.getElementById("cta");
+    cta.href = f.href;
+    document.getElementById("cta-label").textContent = "Download for " + f.label;
+    document.getElementById("cta-meta").textContent = `${f.file}   ${f.size}   v${FILES.version}`;
+    document.getElementById("others").innerHTML = "Also for " + all.filter((o) => o !== os).map(link).join("");
+    document.querySelectorAll(".oscard").forEach((c) => {
+      const mine = c.dataset.os === os;
+      c.classList.toggle("detected", mine);
+      const b = c.querySelector(".btn");
+      b.classList.toggle("ghost", !mine);
+    });
+    document.documentElement.dataset.os = os;
+  })();
+</script>
+</body>
+</html>

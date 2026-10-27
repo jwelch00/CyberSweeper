@@ -2,7 +2,7 @@
 
 Infinite, no-guessing Minesweeper with a cyberpunk look, for Windows, macOS and Linux. Three links, a draining signal bar, and never a coin flip. Made with Claude.
 
-**Status: milestone 5 of 6** (the icon and the Windows, macOS and Linux builds). The whole game is playable: the boot, the title, the mode picker, Arcade and Ghost runs, pause, the full game over, palettes, rivals and settings, with progress saved between launches. `tools/build.py` makes the three downloads (see [Building the downloads](#building-the-downloads)). Milestone 6 is the download page and the deploy script. See `SPEC.md` for the full brief and `design/` for the look (art direction v2 and `design/MOTION.md`). Post-launch ideas (not scheduled) live in `IDEAS.md`.
+**Status: milestone 6 of 6** (the download page and the deploy script). The whole game is playable: the boot, the title, the mode picker, Arcade and Ghost runs, pause, the full game over, palettes, rivals and settings, with progress saved between launches. `tools/build.py` makes the three downloads and the download page (see [Building the downloads](#building-the-downloads)), and `deploy/deploy.sh` publishes them on the download site (see [Publishing](#publishing)). See `SPEC.md` for the full brief and `design/` for the look (art direction v2 and `design/MOTION.md`). Post-launch ideas (not scheduled) live in `IDEAS.md`.
 
 ## Playing
 
@@ -83,6 +83,7 @@ Into `dist/` (gitignored):
 | `CyberSweeper-macos.zip` | `CyberSweeper.app` (universal: Intel and Apple silicon; ad-hoc signed, not notarized; macOS 11+ on Intel, 13+ on Apple silicon) |
 | `CyberSweeper-linux.tar.gz` | `CyberSweeper.x86_64` (executable; game data built in) |
 | `SHA256SUMS` | checksums of the three, for `sha256sum -c SHA256SUMS` |
+| `index.html` | the download page (below) |
 
 Each folder also has `README.txt` (how to open it on that system, where saves live) and `LICENSES/` (the three font licenses, and Godot's license with its third-party notices). The export settings are in `game/export_presets.cfg`. They leave out `tests/`, `sim/` and `dev/` (the screenshot code), and a release build ignores every development flag except `--reduce-motion` and `--reduce-flashing`.
 
@@ -90,10 +91,35 @@ Before reporting success, the script checks every build:
 - the game data has no `tests/`, `sim/` or `dev/` files, and has the data the game loads;
 - each archive's layout, and that the Linux binary and the Mac program are executable;
 - Windows: the exe carries every icon size and the version;
-- Mac: a universal binary, signed, with the right bundle id (`io.github.jwelch00.cybersweeper`), version and icon;
+- Mac: a universal binary, signed, with the right bundle id (`com.cybersweeper.game`), version and icon;
 - on a Linux host, a headless test launch of the Linux build: it must run clean, report the dev flags it ignored, and write no screenshot.
 
 Builds aren't tested on Windows or macOS here; try the .exe and, if you can, the Mac app on a real machine.
+
+**The download page.** `dist/index.html` is built from `site/index.html`, a rebuild of `design/mockups/download-page.html`. It's one self-contained file, about 400 KB, with everything inline:
+- the design's `cs.css` and background-board script, and Signal's colors generated from `palettes.json`;
+- the Chakra Petch and Martian Mono fonts, embedded;
+- the icon, and the screenshot `site/screenshot.webp`.
+
+The build fills in:
+- the version;
+- each download's size and SHA-256;
+- the Mac minimum versions from the built app;
+- all seven rivals from `rivals.json`, with the palettes they unlock from `unlocks.json`.
+
+A small inline script highlights the visitor's system: the big button, "Also for", and the "Your system" card. On a phone it says the game is for computers and lists all three. Without JavaScript the page defaults to Windows. Download links carry `?v=` plus the start of each file's checksum, so Cloudflare's cache never serves an old build next to new checksums.
+
+The build checks that the page shows the release's checksums, links only to files in the release, loads nothing from anywhere else, and stays under 1 MB. `python tools/build.py --page-only` rewrites just the page from the archives already in `dist/`, and refuses if any of them is from another version. Re-take the screenshot with `python tools/shots.py --site` when the game's look changes, and commit it.
+
+## Publishing
+
+`deploy/deploy.sh` publishes `dist/` (or a folder copied over from Windows) on the server, run there by hand. The site's address and tunnel name live in `deploy/site.env` on the server, which is never committed (`deploy/site.env.example` shows the format), so this repo names no server. It sets the site up like the server's other sites:
+- nginx on `127.0.0.1:80` only, with `deploy/cybersweeper.conf` in `/etc/nginx/conf.d/`;
+- the files in `/var/www/cybersweeper`;
+- the hostname added to the existing Cloudflare tunnel;
+- firewalld untouched, since nothing opens inward.
+
+It explains each step and asks before changing system config. `deploy/README.md` walks through every step, updates, rollbacks and taking it down.
 
 ## Engine version
 
@@ -145,7 +171,15 @@ tools/
   sync_design.py       copies palettes, fonts and the icon from design/ (--check verifies)
   js_reference.mjs     records design/shared/*.js outputs the ports are tested against (needs node)
   make_sfx.py          synthesizes the sound effects
-  shots.py             renders comparison screenshots into test-output/shots/
+  shots.py             renders comparison screenshots into test-output/shots/ (--site: the page's screenshot)
+site/
+  index.html           the download page template (tools/build.py fills it in as dist/index.html)
+  screenshot.webp      the page's gameplay screenshot (tools/shots.py --site)
+deploy/
+  deploy.sh            publishes a release on the server (run it there yourself)
+  site.env.example     the format of site.env: the site's address and tunnel (the real one isn't committed)
+  cybersweeper.conf    the nginx site it installs
+  README.md            what every step does
 docs/tuning-report.md  bot results behind the current tuning and rival scores
 design/                reference designs (read-only)
 ```
@@ -320,4 +354,4 @@ A seed plus the move log reproduces a run exactly. The log is also replay-ready:
 
 ## Building
 
-Exports for Windows, macOS and Linux arrive in milestone 5.
+See [Building the downloads](#building-the-downloads) and [Publishing](#publishing).

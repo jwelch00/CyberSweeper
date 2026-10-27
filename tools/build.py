@@ -6,7 +6,9 @@
     python tools/build.py --only windows,linux
 
 Writes dist/CyberSweeper-windows.zip, CyberSweeper-macos.zip,
-CyberSweeper-linux.tar.gz and SHA256SUMS (for `sha256sum -c`). Each archive
+CyberSweeper-linux.tar.gz, SHA256SUMS (for `sha256sum -c`) and index.html,
+the download page (site/index.html with everything inline and this release's
+sizes and checksums; --page-only rewrites just the page). Each archive
 holds one CyberSweeper/ folder: the game, README.txt and LICENSES/ (the font
 licenses and Godot's, which must travel with the game).
 
@@ -25,7 +27,10 @@ only part of CyberSweeper that goes online; the game makes no network calls.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
+import html
+import json
 import io
 import os
 import platform
@@ -50,8 +55,8 @@ GAME = rt.GAME
 BUILD = ROOT / "build"   # raw exports (gitignored)
 DIST = ROOT / "dist"
 NAME = "CyberSweeper"
-REPO = "https://github.com/jwelch00/CyberSweeper"
-BUNDLE_ID = "io.github.jwelch00.cybersweeper"
+# The downloads and this public repo name no person, account or server.
+BUNDLE_ID = "com.cybersweeper.game"
 GODOT_RELEASES = "https://github.com/godotengine/godot/releases/download"
 
 # Each target: its preset in game/export_presets.cfg, the file Godot writes,
@@ -270,7 +275,6 @@ def readme(target: str, ver: str) -> str:
         "",
         "The game never goes online: no accounts, no telemetry, no update checks.",
         "",
-        f"Source and credits: {REPO}",
         "Licenses for the fonts and the Godot Engine are in the LICENSES folder.",
         "",
     ]
@@ -454,6 +458,162 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
+# --- the download page --------------------------------------------------------------
+
+SITE = ROOT / "site"
+DESIGN = ROOT / "design"
+PAGE_MAX = 1_000_000
+LABELS = {"windows": "Windows", "macos": "macOS", "linux": "Linux"}
+# The fonts the page uses (cs.css also declares the Japanese subset; the page has no Japanese).
+PAGE_FONTS = [f"ChakraPetch-{w}.woff2" for w in (400, 500, 600, 700)] + \
+             [f"MartianMono-{w}.woff2" for w in (300, 400, 600, 800)]
+
+
+def _data_uri(path: Path, mime: str) -> str:
+    return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
+
+
+def _json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def palette_css() -> str:
+    """Signal's colors as CSS variables, from palettes.json (the way
+    design/tokens/gen_palettes.py names them: tileEdge -> --tile-edge)."""
+    pal = next(p for p in _json(GAME / "assets" / "tokens" / "palettes.json")["palettes"] if p["id"] == "signal")
+    name = lambda k: re.sub(r"[A-Z]", lambda m: "-" + m[0].lower(), k)  # noqa: E731
+    lines = [f"  --{name(k)}: {v};" for k, v in pal["colors"].items()]
+    lines += [f"  --n{i + 1}: {v};" for i, v in enumerate(pal["numbers"])]
+    return ":root {\n" + "\n".join(lines) + "\n}"
+
+
+def design_css() -> str:
+    """design/shared/cs.css with its palette import dropped (palette_css
+    replaces it) and the fonts embedded."""
+    css = (DESIGN / "shared" / "cs.css").read_text(encoding="utf-8")
+    css = re.sub(r'@import url\("../tokens/palettes.css"\);\n?', "", css)
+    css = re.sub(r'@font-face \{[^}]*NotoSansJP[^}]*\}\n?', "", css)
+    for f in PAGE_FONTS:
+        css = css.replace(f'url("../fonts/{f}")', f'url("{_data_uri(DESIGN / "fonts" / f, "font/woff2")}")')
+    if re.search(r'url\(\s*["\']?\.\./', css):
+        fail("design/shared/cs.css refers to a file the page can't embed")
+    return css
+
+
+def webp_size(path: Path) -> tuple[int, int]:
+    d = path.read_bytes()
+    if d[:4] != b"RIFF" or d[8:12] != b"WEBP":
+        fail(f"{path} isn't a WebP image")
+    kind = d[12:16]
+    if kind == b"VP8X":
+        return 1 + int.from_bytes(d[24:27], "little"), 1 + int.from_bytes(d[27:30], "little")
+    if kind == b"VP8 ":
+        return int.from_bytes(d[26:28], "little") & 0x3FFF, int.from_bytes(d[28:30], "little") & 0x3FFF
+    if kind == b"VP8L":
+        b = int.from_bytes(d[21:25], "little")
+        return (b & 0x3FFF) + 1, ((b >> 14) & 0x3FFF) + 1
+    fail(f"{path}: unknown WebP format")
+    return 0, 0
+
+
+def archive_version(path: Path) -> str:
+    """The version on the first line of the README.txt inside an archive."""
+    member = f"{NAME}/README.txt"
+    if path.name.endswith(".tar.gz"):
+        with tarfile.open(path) as tar:
+            text = tar.extractfile(member).read().decode()
+    else:
+        with zipfile.ZipFile(path) as z:
+            text = z.read(member).decode()
+    return text.split()[1]
+
+
+def macos_minimum(path: Path) -> str:
+    with zipfile.ZipFile(path) as z:
+        plist = plistlib.loads(z.read(f"{NAME}/{NAME}.app/Contents/Info.plist"))
+    mins = plist.get("LSMinimumSystemVersionByArchitecture", {})
+    v = lambda a: re.sub(r"\.0+$", "", mins.get(a, "?"))  # noqa: E731
+    return f"macOS {v('x86_64')} or later on Intel, {v('arm64')} or later on Apple silicon"
+
+
+def rivals_html() -> str:
+    rivals = _json(GAME / "data" / "rivals.json")["rivals"]
+    names = {p["id"]: p["name"] for p in _json(GAME / "assets" / "tokens" / "palettes.json")["palettes"]}
+    prize = {rule["rival"]: names[pid] for pid, rule in _json(GAME / "data" / "unlocks.json")["palettes"].items()
+             if rule and rule.get("type") == "beat_rival"}
+    rows = []
+    for i, r in enumerate(rivals):
+        top = " top" if i == len(rivals) - 1 else ""
+        won = f"Unlocks <b>{html.escape(prize[r['id']])}</b>" if r["id"] in prize else ""
+        rows.append(f'      <div class="rv{top}"><span class="tier">{html.escape(r["label"])}</span>'
+                    f'<span class="who">{html.escape(r["name"])}</span><span class="pts num">{int(r["score"]):,}</span>'
+                    f'<span class="prize">{won}</span></div>')
+    return "\n".join(rows)
+
+
+def write_page(ver: str) -> Path:
+    """dist/index.html from site/index.html: everything inline, with this
+    release's sizes and checksums. Every archive must be from this version."""
+    files = {}
+    for t, info in TARGETS.items():
+        path = DIST / info["archive"]
+        if not path.exists():
+            fail(f"the page needs all three downloads; {info['archive']} isn't in dist/")
+        av = archive_version(path)
+        if av != ver:
+            fail(f"{info['archive']} is from {av}, not {ver}; rebuild it before writing the page")
+        sha = sha256_of(path)
+        files[t] = {"label": LABELS[t], "file": info["archive"], "size": f"{path.stat().st_size / 1e6:.0f} MB",
+                    "href": f"{info['archive']}?v={sha[:12]}", "sha": sha}
+    shot = SITE / "screenshot.webp"
+    w, h = webp_size(shot)
+    pad = max(len(f["file"]) for f in files.values()) + 4
+    values = {
+        "PALETTE_CSS": palette_css(),
+        "CS_CSS": design_css(),
+        "BOARD_JS": (DESIGN / "shared" / "board.js").read_text(encoding="utf-8"),
+        "FAVICON": _data_uri(DESIGN / "icon" / "icon-small.svg", "image/svg+xml"),
+        "ICON": _data_uri(DESIGN / "icon" / "icon.svg", "image/svg+xml"),
+        "SCREENSHOT": _data_uri(shot, "image/webp"), "SCREENSHOT_W": str(w), "SCREENSHOT_H": str(h),
+        "VERSION": html.escape(ver),
+        "MACOS_MIN": macos_minimum(DIST / TARGETS["macos"]["archive"]),
+        "RIVALS": rivals_html(),
+        "SUMS": "\n".join(f"<b>{f['file']}</b>{' ' * (pad - len(f['file']))}{f['sha']}" for f in files.values()),
+        "FILES_JSON": json.dumps({"version": ver, **{t: {k: f[k] for k in ("label", "file", "size", "href")}
+                                                    for t, f in files.items()}}),
+    }
+    for t, f in files.items():
+        values[f"{t.upper()}_HREF"] = html.escape(f["href"])
+        values[f"{t.upper()}_FILE"] = f["file"]
+        values[f"{t.upper()}_SIZE"] = f["size"]
+    template = (SITE / "index.html").read_text(encoding="utf-8")
+    wanted = set(re.findall(r"\{\{([A-Z_]+)\}\}", template))
+    if wanted - values.keys():
+        fail("site/index.html has unknown slots: " + ", ".join(sorted(wanted - values.keys())))
+    page = re.sub(r"\{\{([A-Z_]+)\}\}", lambda m: values[m[1]], template)
+    check_page(page, files)
+    out = DIST / "index.html"
+    out.write_text(page, encoding="utf-8", newline="\n")
+    return out
+
+
+def check_page(page: str, files: dict) -> None:
+    for f in files.values():
+        if f["sha"] not in page:
+            fail(f"the page doesn't show {f['file']}'s checksum")
+    allowed = {f["href"] for f in files.values()} | {"SHA256SUMS"}
+    for attr, val in re.findall(r'\b(href|src)="([^"]*)"', page):
+        v = html.unescape(val)
+        if not (v.startswith("#") or v.startswith("data:") or v in allowed or v.startswith("${")):
+            fail(f"the page links to {v[:80]!r}, which isn't in the release")
+    loads = re.findall(r'(?:src|href)\s*=\s*["\']?https?:|url\(\s*["\']?https?:|@import|\bfetch\(|XMLHttpRequest', page)
+    if loads:
+        fail("the page loads something from outside: " + ", ".join(sorted(set(loads))))
+    if len(page.encode()) > PAGE_MAX:
+        fail(f"the page is {len(page.encode()) / 1e6:.2f} MB; keep it under {PAGE_MAX / 1e6:.0f} MB")
+    print(f"  page: {len(page.encode()) / 1e3:.0f} KB, checksums and links match the release, loads nothing from outside")
+
+
 # --- main -------------------------------------------------------------------------
 
 def main() -> int:
@@ -462,7 +622,12 @@ def main() -> int:
     ap.add_argument("--only", help="comma-separated: " + ",".join(TARGETS))
     ap.add_argument("--install-templates", action="store_true", help="download and install the export templates")
     ap.add_argument("--templates-file", help="install the templates from this .tpz instead of downloading")
+    ap.add_argument("--page-only", action="store_true", help="rewrite dist/index.html from the archives already there")
     args = ap.parse_args()
+    if args.page_only:
+        step("the download page")
+        print(f"  {write_page(version())}")
+        return 0
     godot = rt.find_godot(args.godot)
     folder, tag = godot_version(godot)
     tdir = templates_dir(godot, folder)
@@ -501,12 +666,21 @@ def main() -> int:
                 test_launch(exported)
     sums = [(sha256_of(DIST / t["archive"]), t["archive"]) for t in TARGETS.values() if (DIST / t["archive"]).exists()]
     (DIST / "SHA256SUMS").write_text("".join(f"{h}  {n}\n" for h, n in sums), encoding="utf-8", newline="\n")
+    step("the download page")
+    page = None
+    if all(archive_version(DIST / TARGETS[t]["archive"]) == ver for t in TARGETS if (DIST / TARGETS[t]["archive"]).exists()) \
+            and len(sums) == len(TARGETS):
+        page = write_page(ver)
+    else:
+        print(f"  not written: the page needs all three downloads from {ver} (build the rest, or use --page-only later)")
     step("done")
     for h, n in sums:
         size = (DIST / n).stat().st_size / 1e6
         print(f"  {n:28} {size:6.1f} MB  sha256 {h[:16]}…" + ("" if n in [TARGETS[t]["archive"] for t in targets]
                                                             else "  (from an earlier build)"))
     print(f"  {DIST / 'SHA256SUMS'}")
+    if page:
+        print(f"  {page}")
     return 0
 
 

@@ -10,6 +10,8 @@ Every third-party asset and tool that ships with CyberSweeper or is used to buil
 | Martian Mono | Every digit | Copyright 2020 The Martian Mono Project Authors (https://github.com/evilmartians/mono) | SIL Open Font License 1.1, `design/fonts/OFL-MartianMono.txt` |
 | Noto Sans JP Bold (subset) | The few decorative Japanese words | © 2014-2021 Adobe (http://www.adobe.com/). A glyph subset of Noto Sans CJK JP Bold | SIL Open Font License 1.1, `design/fonts/OFL-NotoSansCJK.txt` |
 
+The download page (`site/index.html`, built into `dist/index.html`) embeds the same Chakra Petch and Martian Mono WOFF2 files from `design/fonts/`, under the same licenses, and its footer names them and their license.
+
 ## Engine
 
 | Software | Version | License |

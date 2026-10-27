@@ -109,6 +109,7 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
 - A static download page: a single self-contained `index.html` matching `design/png/download-page.png` (inline CSS and JS, self-hosted fonts, no external CDNs), with per-OS download buttons, the visitor's OS detected and highlighted, a real screenshot, controls, rival scores, per-OS run notes, and the checksums filled in by the build script.
 - Per-OS run notes: Windows = SmartScreen "More info → Run anyway"; macOS = on first launch go to System Settings → Privacy & Security → Open Anyway (macOS 15+; right-click → Open works on older versions); Linux = `chmod +x` if needed.
 - The page and builds will be hosted on my home Red Hat Linux server with nginx. Write a deploy script (run on the server) and instructions covering copying files over from Windows, file placement, nginx config, SELinux contexts (`restorecon`), and firewalld. Do not run anything against the server yourself.
+- **As built (milestone 6, 2026-10-27):** the site is served like the server's other sites: nginx on `127.0.0.1:80` behind the existing Cloudflare tunnel. The server's standing rule is no inbound ports, so the firewalld part of the deploy is "nothing opens". Neither the downloads nor this public repo name a person, an account or the server: the site's address and tunnel live in `deploy/site.env` on the server (not committed), and the Mac bundle id is `com.cybersweeper.game`. `deploy/README.md` has the steps.
 
 ## Ghost mode (milestone 4)
 - A second game mode. Arcade stays the main mode.

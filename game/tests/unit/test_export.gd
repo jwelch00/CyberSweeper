@@ -3,7 +3,7 @@ extends TestCase
 ## icon wired into the project and every preset, the startup color, and one
 ## version everywhere. tools/build.py checks the built archives themselves.
 
-const BUNDLE_ID := "io.github.jwelch00.cybersweeper"
+const BUNDLE_ID := "com.cybersweeper.game"
 
 
 ## {preset name: {platform, include, exclude, options}} from export_presets.cfg.
