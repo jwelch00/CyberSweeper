@@ -2,7 +2,7 @@
 
 Infinite, no-guessing Minesweeper with a cyberpunk look, for Windows, macOS and Linux. Three links, a draining signal bar, and never a coin flip. Made with Claude.
 
-**Status: milestone 4 of 6** (palettes, unlocks, save data, rivals, every screen, Ghost mode, accessibility). The whole game is playable: the boot, the title, the mode picker, Arcade and Ghost runs, pause, the full game over, palettes, rivals and settings, with progress saved between launches. Milestone 5 is icons and the cross-platform builds. See `SPEC.md` for the full brief and `design/` for the look (art direction v2 and `design/MOTION.md`). Post-launch ideas (not scheduled) live in `IDEAS.md`.
+**Status: milestone 5 of 6** (the icon and the Windows, macOS and Linux builds). The whole game is playable: the boot, the title, the mode picker, Arcade and Ghost runs, pause, the full game over, palettes, rivals and settings, with progress saved between launches. `tools/build.py` makes the three downloads (see [Building the downloads](#building-the-downloads)). Milestone 6 is the download page and the deploy script. See `SPEC.md` for the full brief and `design/` for the look (art direction v2 and `design/MOTION.md`). Post-launch ideas (not scheduled) live in `IDEAS.md`.
 
 ## Playing
 
@@ -58,6 +58,43 @@ Everything in `design/MOTION.md` is in, with the timings from `design/shared/fx.
 
 The visor curvature (MOTION.md calls it optional) is left out: it would mean rendering the HUD off-screen, which loses the blurred-board panel backgrounds and resamples the 9 px micro-text into blur.
 
+## Building the downloads
+
+`tools/build.py` makes the three downloads from Windows, macOS or Linux (Python 3.9+, standard library only), using the same Godot as the tests (see [Setup](#setup)). Once, install Godot's export templates for 4.7.2:
+
+```powershell
+python tools/build.py --install-templates
+```
+
+That downloads Godot's official template file (1.3 GB) from its GitHub release, checks it against the SHA-512 list published with the release, and keeps only the three templates used here (about 300 MB) in Godot's own template folder (`%APPDATA%\Godot\export_templates\4.7.2.stable` on Windows). The Godot editor's **Editor > Manage Export Templates > Download and Install** works too, and `--templates-file FILE` installs from a `.tpz` you already have. This is the only thing in the project that goes online.
+
+Then build:
+
+```powershell
+python tools/build.py                     # all three
+python tools/build.py --only windows      # or a subset: windows, macos, linux
+```
+
+Into `dist/` (gitignored):
+
+| File | Inside its `CyberSweeper/` folder |
+| --- | --- |
+| `CyberSweeper-windows.zip` | `CyberSweeper.exe` (x86_64; game data, icon and version info built in) |
+| `CyberSweeper-macos.zip` | `CyberSweeper.app` (universal: Intel and Apple silicon; ad-hoc signed, not notarized; macOS 11+ on Intel, 13+ on Apple silicon) |
+| `CyberSweeper-linux.tar.gz` | `CyberSweeper.x86_64` (executable; game data built in) |
+| `SHA256SUMS` | checksums of the three, for `sha256sum -c SHA256SUMS` |
+
+Each folder also has `README.txt` (how to open it on that system, where saves live) and `LICENSES/` (the three font licenses, and Godot's license with its third-party notices). The export settings are in `game/export_presets.cfg`. They leave out `tests/`, `sim/` and `dev/` (the screenshot code), and a release build ignores every development flag except `--reduce-motion` and `--reduce-flashing`.
+
+Before reporting success, the script checks every build:
+- the game data has no `tests/`, `sim/` or `dev/` files, and has the data the game loads;
+- each archive's layout, and that the Linux binary and the Mac program are executable;
+- Windows: the exe carries every icon size and the version;
+- Mac: a universal binary, signed, with the right bundle id (`io.github.jwelch00.cybersweeper`), version and icon;
+- on a Linux host, a headless test launch of the Linux build: it must run clean, report the dev flags it ignored, and write no screenshot.
+
+Builds aren't tested on Windows or macOS here; try the .exe and, if you can, the Mac app on a real machine.
+
 ## Engine version
 
 **Godot 4.7.2-stable** (official build `4.7.2.stable.official.ed1daf0bf`), the standard build, not the .NET one. Get it from https://godotengine.org/download/archive/4.7.2-stable/ or the GitHub release `4.7.2-stable`. Check the zip against the release's `SHA512-SUMS.txt`.
@@ -80,7 +117,7 @@ game/                  Godot project (open game/project.godot in the editor)
     bot.gd             headless player: the three rivals and the tuning profiles
     session.gd         runs a GameState on a worker thread for the UI
   ui/                  the screens (read the core only through Session)
-    main.tscn          entry scene; also screenshot (--shot) and gallery modes
+    main.tscn          entry scene (main.gd reads the command-line flags)
     screen_flow.gd     boot -> title -> game -> game over, datamosh between them
     screens/           boot (breach), title, mode picker, pause, settings, palettes, rivals, game over
                        (deck.gd is their shared drawing kit, menu_screen.gd their mouse/keyboard list)
@@ -91,18 +128,21 @@ game/                  Godot project (open game/project.godot in the editor)
     glyph_atlas.gd     digits, hex, flag and mine drawn once into textures
     hud/               jagged street-deck panels (jag.gd ports CS.jagPoints), links, signal, score, minimap
     fx/                motion timings, breach plan, title cards, datamosh, afterimages, strain, flash guard
-  assets/              fonts + OFL, palettes.json (copied from design/), sfx
+  assets/              fonts + OFL, palettes.json and the icon (copied from design/), sfx
   data/
     tuning.json        every gameplay number (tuned in milestone 2)
     bots.json          bot profiles: tier, think time, error rates
     rivals.json        approved rival scores for the leaderboard
     unlocks.json       palette unlock conditions (approved thresholds)
+  dev/                 development only, never exported: shots.gd (--shot and --gallery), licenses.gd
   sim/run_sim.gd       headless bot runs
   tests/               test runner, unit tests, property suite, ui_smoke.gd
+  export_presets.cfg   the Windows, macOS and Linux export settings
 tools/
+  build.py             makes the three downloads into dist/ and checks them
   run_tests.py         runs the suites, property games in parallel
   simulate.py          runs the bots, tunes, writes the tuning report
-  sync_design.py       copies palettes and fonts from design/ (--check verifies)
+  sync_design.py       copies palettes, fonts and the icon from design/ (--check verifies)
   js_reference.mjs     records design/shared/*.js outputs the ports are tested against (needs node)
   make_sfx.py          synthesizes the sound effects
   shots.py             renders comparison screenshots into test-output/shots/
@@ -112,7 +152,7 @@ design/                reference designs (read-only)
 
 ## Setup
 
-Python 3.9+ runs the test tool. Point it at Godot in one of these ways (it checks them in this order):
+Python 3.9+ runs the test and build tools. Point them at Godot in one of these ways (it checks them in this order):
 
 1. `--godot PATH`
 2. the `GODOT` environment variable

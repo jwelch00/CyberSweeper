@@ -16,12 +16,19 @@ Every third-party asset and tool that ships with CyberSweeper or is used to buil
 | --- | --- | --- |
 | Godot Engine | 4.7.2-stable (official build ed1daf0bf) | MIT, https://godotengine.org/license |
 
-Godot's own third-party components are listed in its `COPYRIGHT.txt` and at https://godotengine.org/license.
+Godot's own third-party components are listed in its `COPYRIGHT.txt` and at https://godotengine.org/license. Every download carries Godot's license and those notices in `LICENSES/Godot.txt`, written from the engine itself by `game/dev/licenses.gd`, next to the three font licenses.
+
+## Build tools
+
+| Software | Use | License |
+| --- | --- | --- |
+| Godot export templates 4.7.2-stable | the Windows, macOS and Linux runtimes the builds are made from (installed by `tools/build.py --install-templates`, checked against Godot's published SHA-512) | MIT, as Godot |
 
 ## Audio and art
 
 - **Sound effects** (`game/assets/sfx/*.wav`): synthesized from scratch by `tools/make_sfx.py`, original to this project.
 - **Glyphs** (flag, mine): drawn at runtime from the shapes in `design/shared/board.js`, original to this project.
-- Everything else (design, icon, palettes) is original work for this project.
+- **Icon** (`design/icon/`, copied into `game/assets/icon/`): original to this project.
+- Everything else (design, palettes) is original work for this project.
 
 No third-party audio or art is used. Any CC0 asset added later goes here with its source and license.

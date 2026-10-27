@@ -6,7 +6,8 @@
 
 design/ stays the source of truth and is never modified. The game reads
 colors only from game/assets/tokens/palettes.json, which must match
-design/tokens/palettes.json byte for byte.
+design/tokens/palettes.json byte for byte; the fonts and icon are copied the
+same way.
 """
 from __future__ import annotations
 
@@ -25,6 +26,12 @@ FILES = [
     ("fonts/OFL-MartianMono.txt", "fonts/OFL-MartianMono.txt"),
     ("fonts/NotoSansJP-Bold-subset.otf", "fonts/NotoSansJP-Bold-subset.otf"),
     ("fonts/OFL-NotoSansCJK.txt", "fonts/OFL-NotoSansCJK.txt"),
+    # The icon (SPEC.md, Icon): .ico in the Windows exe and window, .icns for
+    # the Mac app, and the 256 px PNG export of icon.svg as Godot's project
+    # (and Linux window) icon.
+    ("icon/icon.ico", "icon/icon.ico"),
+    ("icon/icon.icns", "icon/icon.icns"),
+    ("icon/png/icon-256.png", "icon/icon-256.png"),
 ] + [(f"fonts/ChakraPetch-{w}.ttf", f"fonts/ChakraPetch-{w}.ttf") for w in (400, 500, 600, 700)] \
   + [(f"fonts/MartianMono-{w}.ttf", f"fonts/MartianMono-{w}.ttf") for w in (300, 400, 600, 800)]
 
