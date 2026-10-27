@@ -7,6 +7,7 @@ extends SceneTree
 ##   --override '{"signal": {"drain_per_sec": 2.5}}'   tuning.json overrides
 ##   --bot-override '{"think_median_ms": 900}'          bot profile overrides
 ##   --max-minutes 120                                  safety cap on run length
+##   --grace                                            play with the human-only signal grace
 
 const SEED_BASE := 0x5100000
 
@@ -53,7 +54,7 @@ func _run(args: Dictionary) -> int:
 	var runs: Array[Dictionary] = []
 	for i in range(first, first + games):
 		var seed := game_seed(i)
-		var gs := GameState.new(seed, rules)
+		var gs := GameState.new(seed, rules, false, GameState.Mode.ARCADE, args.has("grace"))
 		var bot := Bot.new(pid, profile, rules, seed ^ 0x2545F491)
 		bot.play(gs, Vector2i.ZERO, max_ms)
 		runs.append({
@@ -70,6 +71,6 @@ func _run(args: Dictionary) -> int:
 	print("sim %s games %d-%d: %.1f s" % [pid, first, first + games - 1, elapsed])
 	if args.has("json"):
 		var fa := FileAccess.open(args.json, FileAccess.WRITE)
-		fa.store_string(JSON.stringify({"profile": pid, "bot": profile, "tuning": rules.data,
+		fa.store_string(JSON.stringify({"profile": pid, "grace": args.has("grace"), "bot": profile, "tuning": rules.data,
 			"runs": runs, "elapsed_s": elapsed}))
 	return 0

@@ -16,6 +16,10 @@ var refill_cap_per_move: float
 var low_fraction: float
 var critical_fraction: float
 var display_curve: float
+## Signal grace (humans only, GameState.grace): with the shown bar at or below
+## grace_below, uncovering tiles freezes the drain for grace_ms.
+var grace_below: float
+var grace_ms: int
 
 var density_base: float
 var density_per_cell: float
@@ -39,6 +43,9 @@ const MICRO := 1000000
 var signal_max_u: int
 var refill_per_cell_u: int
 var refill_cap_u: int
+## The real signal (micro-units) at which the shown bar reads grace_below,
+## whole milli-points, so the comparison in GameState is exact integer math.
+var grace_below_u: int
 
 var _thresholds := PackedInt64Array()   # mine threshold per depth until the cap
 var _threshold_cap := 0
@@ -67,6 +74,8 @@ static func from_dict(d: Dictionary) -> Rules:
 	r.low_fraction = float(d.signal.low_fraction)
 	r.critical_fraction = float(d.signal.critical_fraction)
 	r.display_curve = float(d.signal.get("display_curve", 0.0))
+	r.grace_below = float(d.signal.get("grace_below", 0.0))
+	r.grace_ms = int(d.signal.get("grace_ms", 0))
 	r.density_base = float(d.density.base)
 	r.density_per_cell = float(d.density.per_cell)
 	r.density_max = float(d.density.max)
@@ -84,6 +93,7 @@ static func from_dict(d: Dictionary) -> Rules:
 	r.signal_max_u = roundi(r.signal_max * MICRO)
 	r.refill_per_cell_u = roundi(r.refill_per_cell * MICRO)
 	r.refill_cap_u = roundi(r.refill_cap_per_move * MICRO)
+	r.grace_below_u = roundi(r.signal_real(r.grace_below) * r.signal_max * 1000.0) * (MICRO / 1000)
 	r._build_thresholds()
 	return r
 
@@ -118,6 +128,15 @@ func signal_display(fraction: float) -> float:
 	if display_curve <= 0.0:
 		return f
 	return (exp(display_curve * f) - 1.0) / (exp(display_curve) - 1.0)
+
+
+## The real signal fraction that shows as `shown` on the bar (the inverse
+## of signal_display).
+func signal_real(shown: float) -> float:
+	var s := clampf(shown, 0.0, 1.0)
+	if display_curve <= 0.0:
+		return s
+	return log(1.0 + s * (exp(display_curve) - 1.0)) / display_curve
 
 
 ## Signal drained per second after this much run time.

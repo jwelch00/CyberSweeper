@@ -3,9 +3,9 @@ extends TestCase
 ## exactly (so replays double as score verification), however time is sliced.
 
 
-func _bot_run(pid: String, seed: int, mode := GameState.Mode.ARCADE, minutes := 12) -> GameState:
+func _bot_run(pid: String, seed: int, mode := GameState.Mode.ARCADE, minutes := 12, grace := false) -> GameState:
 	var rules := Rules.load_default()
-	var gs := GameState.new(seed, rules, false, mode)
+	var gs := GameState.new(seed, rules, false, mode, grace)
 	var bot := Bot.new(pid, Bot.load_profiles()[pid], rules, seed)
 	bot.play(gs, Vector2i(2, -3), minutes * 60000)
 	return gs
@@ -38,6 +38,26 @@ func test_time_slicing_doesnt_matter() -> void:
 	var r := gs.move_log.to_replay()
 	for step in [16, 250, 997]:
 		_same(gs, MoveLog.play_replay(r, Rules.load_default(), step), "%d ms ticks" % step)
+
+
+## A person's run, with signal grace: the freezes come from the actions and
+## the signal, so a replay rebuilds them exactly, however time is sliced.
+func test_grace_runs_replay_exactly() -> void:
+	var plain := _bot_run("rookie", 9)
+	var gs := _bot_run("rookie", 9, GameState.Mode.ARCADE, 12, true)
+	check(gs.grace_until_ms > 0, "the run hit the grace line and froze the bar")
+	check(gs.elapsed_ms != plain.elapsed_ms or gs.score != plain.score, "and grace changed how it went")
+	var r: Dictionary = JSON.parse_string(JSON.stringify(gs.move_log.to_replay()))
+	eq(r.grace, true, "the replay records grace")
+	eq(MoveLog.replay_problem(r, Rules.load_default()), "")
+	for step in [0, 16, 997]:
+		_same(gs, MoveLog.play_replay(r, Rules.load_default(), step), "grace, %d ms ticks" % step)
+	var no_grace := r.duplicate(true)
+	no_grace.grace = false
+	var off := MoveLog.play_replay(no_grace, Rules.load_default())
+	check(off.elapsed_ms != gs.elapsed_ms or off.score != gs.score or off.signal_u != gs.signal_u,
+		"the same actions without grace play out differently")
+	check(MoveLog.replay_problem(r.merged({"grace": "yes"}, true), Rules.load_default()) != "", "a bad grace flag is refused")
 
 
 func test_replay_reproduces_a_banked_ghost_run() -> void:

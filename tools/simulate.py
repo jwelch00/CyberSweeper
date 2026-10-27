@@ -32,7 +32,10 @@ ROOT = rt.ROOT
 OUT = rt.OUT / "sim"
 TUNING_SECTIONS = {"links", "signal", "density", "start", "solver", "generator"}
 RIVALS = [r["id"] for r in json.loads((ROOT / "game" / "data" / "rivals.json").read_text())["rivals"]]
-PROFILES = RIVALS + ["reference", "expert"]
+# "+grace" plays that profile with the human-only signal grace (SPEC.md); the
+# rivals never get it, so their scores stay as calibrated.
+HUMANS = ["reference", "expert"]
+PROFILES = RIVALS + HUMANS + [h + "+grace" for h in HUMANS]
 
 
 # --- running ------------------------------------------------------------------
@@ -72,15 +75,18 @@ def run_profiles(godot: str, profiles: list[str], games: int, tuning: dict, bots
 
     def work(t):
         p, first, n = t
+        base, _, extra = p.partition("+")
         js = OUT / f"{tag}-{p}-{first}.json"
         if js.exists():
             js.unlink()
-        args = ["-s", "res://sim/run_sim.gd", "--", "--profile", p, "--first", str(first),
+        args = ["-s", "res://sim/run_sim.gd", "--", "--profile", base, "--first", str(first),
                 "--games", str(n), "--json", str(js)]
+        if extra == "grace":
+            args.append("--grace")
         if tuning:
             args += ["--override", json.dumps(tuning)]
-        if bots.get(p):
-            args += ["--bot-override", json.dumps(bots[p])]
+        if bots.get(base):
+            args += ["--bot-override", json.dumps(bots[base])]
         code, out = rt.run_godot(godot, args, 3600)
         if code != 0 or not js.exists():
             raise RuntimeError(f"{p} games {first}-{first + n - 1} failed (exit {code}):\n{out[-3000:]}")
@@ -331,6 +337,35 @@ def write_report(path: Path, result: dict, summary: dict, sensitivity: list[dict
         beat_exp = f"{(1 - rank_in(exp_scores, v + 0.5)) * 100:.0f}% of runs" if exp_scores else "n/a"
         L.append(f"| {meta[p]['bot']['name']} | {label} | {summary[p]['score']['median']:,.0f} | **{v:,}** | "
                  f"{beat_ref} | {beat_exp} |")
+    graced = [h for h in HUMANS if h in summary and h + "+grace" in summary]
+    if graced:
+        L.append("")
+        L.append("## Signal grace (people only)")
+        L.append("")
+        g = tuning["signal"]
+        L.append(f"A person's run has signal grace: with the shown bar at or below {g['grace_below'] * 100:.0f}%, "
+                 f"uncovering any tiles freezes the drain for {g['grace_ms'] / 1000:g} s. The rivals' bots play "
+                 "without it, so their scores above don't change; the `+grace` profiles replay the human "
+                 "stand-ins with it on, against the same rival scores.")
+        L.append("")
+        L.append("| Profile | Run min, median (without → with grace) | Score, median | Signal-outs / run |")
+        L.append("| --- | --- | --- | --- |")
+        for h in graced:
+            a, b = summary[h], summary[h + "+grace"]
+            L.append(f"| {h} | {a['minutes']['median']:.1f} → {b['minutes']['median']:.1f} | "
+                     f"{a['score']['median']:,.0f} → {b['score']['median']:,.0f} | "
+                     f"{a['signal_outs_per_run']:.2f} → {b['signal_outs_per_run']:.2f} |")
+        L.append("")
+        L.append("| Rival | Score | " + " | ".join(f"{h} beats it (without → with)" for h in graced) + " |")
+        L.append("| --- | --- | " + " | ".join("---" for _ in graced) + " |")
+        for p in RIVALS:
+            v = int(approved[p]["score"])
+            cells = []
+            for h in graced:
+                a = 1 - rank_in([r["score"] for r in runs[h]], v + 0.5)
+                b = 1 - rank_in([r["score"] for r in runs[h + "+grace"]], v + 0.5)
+                cells.append(f"{a * 100:.0f}% → {b * 100:.0f}%")
+            L.append(f"| {approved[p]['name']} | {v:,} | " + " | ".join(cells) + " |")
     if "reference" in summary:
         ref = summary["reference"]
         L.append("")

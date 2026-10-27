@@ -97,6 +97,65 @@ func test_signal_drains_and_costs_a_link_at_zero() -> void:
 	check(gs.signal_level > r.signal_max * 0.9, "and refills the bar")
 
 
+## Signal grace (people only): near empty, uncovering tiles freezes the drain.
+func _person(seed := 31) -> GameState:
+	var gs := GameState.new(seed, Rules.load_default(), false, GameState.Mode.ARCADE, true)
+	gs.reveal(Vector2i(3, -4))
+	gs.tick(500)
+	return gs
+
+
+func test_signal_grace_freezes_the_drain_near_empty() -> void:
+	var gs := _person()
+	var r := gs.rules
+	check(absf(r.signal_display(float(r.grace_below_u) / r.signal_max_u) - r.grace_below) < 0.001,
+		"the line sits at 15% of the bar the player sees")
+	gs.signal_u = r.grace_below_u - 1
+	gs.reveal(_safe_move(gs))
+	var held := gs.signal_u
+	eq(gs.grace_until_ms, 500 + r.grace_ms, "uncovering a tile near empty starts the freeze")
+	gs.tick(r.grace_ms - 1000)
+	eq(gs.signal_u, held, "no drain during the freeze")
+	gs.tick(1000)
+	eq(gs.signal_u, held, "none up to its last millisecond")
+	gs.tick(1000)
+	eq(gs.signal_u, held - (r.drained_u(gs.elapsed_ms) - r.drained_u(gs.elapsed_ms - 1000)), "then it drains as before")
+	# Another tile during a freeze restarts it at full length; it never adds up.
+	gs.signal_u = r.grace_below_u - 1
+	gs.reveal(_safe_move(gs))
+	gs.tick(1000)
+	gs.signal_u = r.grace_below_u - 1
+	gs.reveal(_safe_move(gs))
+	eq(gs.grace_until_ms, gs.elapsed_ms + r.grace_ms, "restarted, not stacked")
+
+
+func test_signal_grace_needs_tiles_near_empty_and_a_person() -> void:
+	var gs := _person()
+	var r := gs.rules
+	gs.signal_u = r.grace_below_u + 1
+	gs.reveal(_safe_move(gs))
+	eq(gs.grace_until_ms, 0, "above 15% shown, nothing freezes")
+	gs.signal_u = r.grace_below_u - 1
+	var m: Variant = _frontier_mine(gs)
+	if m != null:
+		gs.reveal(m)
+		eq(gs.grace_until_ms, 0, "a mine hit uncovers no tiles, so no freeze")
+	gs.flag(_safe_move(gs))
+	eq(gs.grace_until_ms, 0, "nor does a flag")
+	var bot := _game()   # bots play the original rule
+	bot.tick(500)
+	bot.signal_u = r.grace_below_u - 1
+	bot.reveal(_safe_move(bot))
+	eq(bot.grace_until_ms, 0, "bots never get grace")
+	var before := bot.signal_u
+	bot.tick(1000)
+	check(bot.signal_u < before, "and keep draining")
+	var ghost := GameState.new(31, Rules.load_default(), false, GameState.Mode.GHOST, true)
+	ghost.reveal(Vector2i(3, -4))
+	ghost.reveal(_safe_move(ghost))
+	eq(ghost.grace_until_ms, 0, "Ghost mode has no signal to freeze")
+
+
 func test_signal_refill_is_capped_per_move() -> void:
 	var gs := _game()
 	gs.tick(30000)

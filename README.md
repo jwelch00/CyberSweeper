@@ -297,6 +297,8 @@ A reference ("decent human") run lasts a median 9.5 minutes, 6.6–11.3 for most
 
 The low (30%) and critical (10%) marks, the meter's pulse and the red vignette that creeps in from the screen edges all follow the bar you see. Only the display changes; the real drain the bots were tuned on is the same.
 
+**Signal grace, for people only.** With the bar at or below 15% (`signal.grace_below`), uncovering any tiles freezes the drain for 3 seconds (`signal.grace_ms`). Another reveal during a freeze restarts it rather than adding to it. Nothing on screen marks it; the bar just holds. Bots play without it (`GameState.grace` is off unless `GameView` starts a person's run), so the rivals' scores don't change. `tools/simulate.py` measures what it does for a person: its `reference+grace` and `expert+grace` profiles replay the human stand-ins with grace on. With the bots' quick moves the signal almost never runs out (signal-outs per run 1.77 → 0.15 for the reference), runs nearly double (9.5 → 17.6 minutes), and the reference beats NULL//SAINT in 21% of runs instead of none (`docs/tuning-report.md`). A person thinks slower than these bots, so in play it should be milder; it's on trial.
+
 **Palette unlocks** live in `game/data/unlocks.json`. Signal (the default) and **Plaintext** (colorblind-safe) are always unlocked. The rest unlock from Arcade runs only:
 - **Hotwire:** beat mx_halcyon.
 - **Root access:** decrypt 25,000 tiles across all runs.

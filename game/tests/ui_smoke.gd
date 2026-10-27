@@ -347,6 +347,7 @@ func _arcade() -> void:
 	gv.clock_paused = true
 	await _settle()
 	check(float(gv.state.signal) < 1.0, "the signal drains while the clock runs")
+	check(_gs().grace and _gs().move_log.grace, "a person's run plays with signal grace")
 	# One huge frame (a laptop waking up) adds at most MAX_FRAME_MS of run time.
 	var ms0 := _gs().elapsed_ms
 	gv.clock_paused = false

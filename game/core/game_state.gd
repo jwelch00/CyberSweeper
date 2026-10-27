@@ -19,6 +19,13 @@ var move_log := MoveLog.new()
 
 ## Tests only: link losses are counted but never end the run.
 var immortal := false
+## Signal grace, for people only (SPEC.md): with the shown bar at or below
+## rules.grace_below, uncovering any tiles freezes the drain for
+## rules.grace_ms. Player runs turn it on; bots, and so the rivals' scores,
+## play the original rule.
+var grace := false
+## Run time until which the drain is frozen (grace).
+var grace_until_ms := 0
 var mode: Mode = Mode.ARCADE
 ## The player ended the run (Ghost mode's "End run").
 var ended := false
@@ -46,12 +53,15 @@ var backstop_armed := false
 var stuck_count := 0
 
 
-func _init(p_seed: int, p_rules: Rules = null, p_immortal := false, p_mode: Mode = Mode.ARCADE) -> void:
+func _init(p_seed: int, p_rules: Rules = null, p_immortal := false, p_mode: Mode = Mode.ARCADE,
+		p_grace := false) -> void:
 	rules = p_rules if p_rules != null else Rules.load_default()
 	seed = p_seed & CsHash.MASK32
 	immortal = p_immortal
 	mode = p_mode
+	grace = p_grace
 	move_log.mode = mode
+	move_log.grace = grace
 	board = Board.new(seed, rules)
 	gen = Generator.new(board, rules)
 	solver = Solver.from_rules(rules)
@@ -152,12 +162,15 @@ func tick(ms: int) -> MoveResult:
 	# time was sliced into ticks.
 	var t := elapsed_ms
 	while not over:
-		var drain := rules.drained_u(target) - rules.drained_u(t)
+		# A grace freeze always starts at an action, at or before t, so the
+		# drain over [t, target] simply starts once it ends.
+		var from := clampi(grace_until_ms, t, target)
+		var drain := rules.drained_u(target) - rules.drained_u(from)
 		if signal_u > drain:
 			signal_u -= drain
 			t = target
 			break
-		t = _runs_dry(t, target, signal_u)
+		t = _runs_dry(from, target, signal_u)
 		_lose_link(res)
 		signal_u = 0 if over else rules.signal_max_u
 	elapsed_ms = t if over else target
@@ -246,6 +259,8 @@ func _apply(rec: Dictionary, res: MoveResult) -> void:
 			safe_count += 1
 			deepest = maxi(deepest, board.depth(cell))
 	if safe_count > 0:
+		if grace and mode == Mode.ARCADE and signal_u <= rules.grace_below_u:
+			grace_until_ms = elapsed_ms + rules.grace_ms   # restarts, never adds up
 		var refill := mini(rules.refill_cap_u, rules.refill_per_cell_u * safe_count)
 		signal_u = mini(rules.signal_max_u, signal_u + refill)
 	res.game_over = over

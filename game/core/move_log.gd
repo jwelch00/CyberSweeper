@@ -15,6 +15,8 @@ const END := 4
 
 var seed := 0
 var mode: int = 0   # GameState.Mode
+## The run played with signal grace (people only; GameState.grace).
+var grace := false
 var ops := PackedInt32Array()   # triples: op, a, b (cell x, y; or ms, 0)
 
 ## Replay data: player actions as quads (op, x, y, run ms when it happened).
@@ -54,7 +56,7 @@ func to_replay() -> Dictionary:
 	for i in action_count():
 		list.append([actions[i * 4], actions[i * 4 + 1], actions[i * 4 + 2], actions[i * 4 + 3]])
 	return {"format": 1, "version": version, "tuning_hash": tuning_hash, "mode": mode, "seed": seed,
-		"actions": list, "end_ms": end_ms, "score": final_score}
+		"grace": grace, "actions": list, "end_ms": end_ms, "score": final_score}
 
 
 ## Why a replay can't be played on this build, or "" if it can. Check this
@@ -81,6 +83,8 @@ static func _num(v: Variant) -> bool:
 static func _well_formed(r: Dictionary) -> bool:
 	if not _num(r.get("seed")) or not _num(r.get("mode", 0)) or not _num(r.get("end_ms", -1)):
 		return false
+	if not r.get("grace", false) is bool:
+		return false
 	if not int(r.get("mode", 0)) in GameState.Mode.values():
 		return false
 	var list: Variant = r.get("actions")
@@ -102,7 +106,7 @@ static func _well_formed(r: Dictionary) -> bool:
 ## step_ms > 0 slices the time between actions into ticks of that size (a
 ## real frame rate); the result is the same either way.
 static func play_replay(r: Dictionary, rules: Rules, step_ms := 0) -> GameState:
-	var gs := GameState.new(int(r.seed), rules, false, int(r.get("mode", 0)) as GameState.Mode)
+	var gs := GameState.new(int(r.seed), rules, false, int(r.get("mode", 0)) as GameState.Mode, r.get("grace", false))
 	var t := 0
 	for a in r.actions:
 		_advance(gs, t, int(a[3]), step_ms)
@@ -136,13 +140,14 @@ static func _advance(gs: GameState, from: int, to: int, step_ms: int) -> void:
 
 
 func to_dict() -> Dictionary:
-	return {"seed": seed, "mode": mode, "ops": Array(ops), "replay": to_replay()}
+	return {"seed": seed, "mode": mode, "grace": grace, "ops": Array(ops), "replay": to_replay()}
 
 
 static func from_dict(d: Dictionary) -> MoveLog:
 	var log := MoveLog.new()
 	log.seed = int(d.seed)
 	log.mode = int(d.get("mode", 0))
+	log.grace = d.get("grace", false) == true
 	for v in d.ops:
 		log.ops.append(int(v))
 	return log
@@ -150,7 +155,7 @@ static func from_dict(d: Dictionary) -> MoveLog:
 
 ## Plays the log into a fresh GameState.
 static func replay(log: MoveLog, rules: Rules, immortal := false) -> GameState:
-	var gs := GameState.new(log.seed, rules, immortal, log.mode as GameState.Mode)
+	var gs := GameState.new(log.seed, rules, immortal, log.mode as GameState.Mode, log.grace)
 	apply_ops(gs, log, 0, log.count())
 	return gs
 

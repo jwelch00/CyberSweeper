@@ -151,7 +151,7 @@ func new_run(seed := -1, p_mode: GameState.Mode = mode) -> void:
 	mode = p_mode
 	if seed < 0:
 		seed = _rng.randi()
-	session = Session.new(seed, rules, true, mode)
+	session = Session.new(seed, rules, true, mode, true)   # a person playing: signal grace on
 	board.clear()
 	popups.clear()
 	afterimages.clear()

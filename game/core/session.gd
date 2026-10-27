@@ -27,12 +27,14 @@ var _stop := false
 var _over_reported := false
 
 
-func _init(p_seed: int, rules: Rules, p_threaded := true, p_mode: GameState.Mode = GameState.Mode.ARCADE) -> void:
+## grace: the human-only signal grace (GameState.grace); bots run without it.
+func _init(p_seed: int, rules: Rules, p_threaded := true, p_mode: GameState.Mode = GameState.Mode.ARCADE,
+		p_grace := false) -> void:
 	seed = p_seed & CsHash.MASK32
 	_rules = rules
 	threaded = p_threaded
 	mode = p_mode
-	_gs = GameState.new(seed, rules, false, p_mode)
+	_gs = GameState.new(seed, rules, false, p_mode, p_grace)
 	if threaded:
 		_thread = Thread.new()
 		_thread.start(_worker)
