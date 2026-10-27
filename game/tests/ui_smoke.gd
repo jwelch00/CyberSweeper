@@ -37,6 +37,12 @@ func check(cond: bool, msg: String) -> void:
 
 func _run() -> void:
 	_code = 4   # running
+	# A scratch save folder: the smoke test never touches a real save.
+	var save := ProjectSettings.globalize_path("res://").path_join("../test-output/save-smoke")
+	DirAccess.make_dir_recursive_absolute(save)
+	for f in DirAccess.get_files_at(save):
+		DirAccess.remove_absolute(save.path_join(f))
+	SaveStore.dir = save
 	flow = ScreenFlow.new()
 	root.add_child(flow)
 	flow.size = root.get_visible_rect().size
@@ -50,6 +56,7 @@ func _run() -> void:
 	await _title()
 	await _arcade()
 	await _game_over()
+	await _menus()
 	await _ghost()
 	print("ui smoke: %d checks, %d failed" % [_checks, _fails.size()])
 	flow.queue_free()
@@ -119,10 +126,14 @@ func _title() -> void:
 	var t := flow.title
 	check(t.selected == 0, "Jack in is selected")
 	await _key(KEY_DOWN)
-	check(TitleScreen.ITEMS[t.selected][1] == "quit", "the menu skips items that wait for milestone 4")
+	check(TitleScreen.ITEMS[t.selected][1] == "palettes", "the menu moves down")
 	await _key(KEY_UP)
 	await _key(KEY_ENTER)
-	check(flow.current == gv and gv.visible, "Jack in starts a run")
+	check(flow.current == flow.modes, "Jack in opens the mode picker")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	check(flow.modes.selected == 0, "Arcade first")
+	await _key(KEY_ENTER)
+	check(flow.current == gv and gv.visible, "picking a mode starts a run")
 	check(gv.mode == GameState.Mode.ARCADE and not gv.started, "a fresh Arcade run")
 	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 
@@ -362,9 +373,19 @@ func _arcade() -> void:
 	await _shot("04-strain")
 
 
-## The last link: LINK SEVERED, then the game over screen and its buttons.
+## Pause, then the last link: LINK SEVERED, the game over screen (with a
+## palette unlocked), its buttons, and the save.
 func _game_over() -> void:
+	await _key(KEY_ESCAPE)
+	check(flow.current == flow.pause, "Esc pauses")
+	check(gv.paused and gv.clock_paused, "run time stops")
+	check(gv.board.concealed and not gv.lattice.visible, "the board hides behind the cipher")
+	check(gv.visible and flow.pause.visible, "the pause panel sits over the hidden board")
+	await _key(KEY_ESCAPE)
+	check(flow.current == gv and not gv.paused and not gv.board.concealed, "Esc again resumes")
 	var cam := gv.board.cam
+	# Put the save just short of 25,000 tiles, so this run unlocks Root access.
+	flow.profile.total_tiles = 25000 - _gs().tiles
 	var m := _hidden_mine()
 	cam.center = Vector2(m) + Vector2(0.5, 0.5)
 	await _frames(1)
@@ -383,8 +404,23 @@ func _game_over() -> void:
 	await _advance(TitleCards.duration(true, false) * 2.0 + 80.0)
 	check(flow.current == flow.over, "then the game over screen")
 	check(int(flow.over.summary.score) == _gs().score, "with the run's score")
+	check(flow.profile.runs == 1 and flow.profile.arcade.size() == 1, "the run is recorded")
+	check(FileAccess.file_exists(SaveStore.path("profile.json")), "and saved")
+	check(flow.over.report.unlocked_now == ["root-access"], "the run unlocked Root access")
+	var tally: Array = flow.over.summary.tally
+	var sum := 0
+	for n in range(1, tally.size()):
+		sum += n * int(tally[n])
+	check(sum == _gs().score, "the tally adds up to the score")
 	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 	await _shot("05-game-over")
+	var eq := flow.over.button_rect("equip")
+	check(eq.size.x > 0, "the unlock card has an Equip button")
+	_mouse(MOUSE_BUTTON_LEFT, eq.get_center(), true)
+	_mouse(MOUSE_BUTTON_LEFT, eq.get_center(), false)
+	await _frames(2)
+	check(flow.settings.palette_id == "root-access" and flow.palette.id == "root-access", "Equip applies the new palette")
+	check(GameSettings.load_saved().palette_id == "root-access", "and saves it")
 	# Run it back by clicking the button.
 	var r := flow.over.button_rect("again")
 	_mouse(MOUSE_BUTTON_LEFT, r.get_center(), true)
@@ -394,9 +430,65 @@ func _game_over() -> void:
 	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 
 
+## From the title: settings, palettes and rivals, each saving and going back with Esc.
+func _menus() -> void:
+	# Leave the fresh run through pause: nothing was played, so nothing is recorded.
+	await _key(KEY_ESCAPE)
+	flow.pause.selected = 3
+	await _key(KEY_ENTER)
+	check(flow.current == flow.title, "Main menu from pause goes to the title")
+	check(flow.profile.runs == 1, "an unplayed run isn't recorded")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	# Settings: turn scanlines off.
+	flow.title.selected = 3
+	await _key(KEY_ENTER)
+	check(flow.current == flow.settings_screen, "Settings opens")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	flow.settings_screen.selected = flow.settings_screen.items().find("scanlines")
+	await _key(KEY_ENTER)
+	check(not flow.settings.scanlines, "Enter toggles a setting")
+	check(not GameSettings.load_saved().scanlines, "and it's saved straight away")
+	await _key(KEY_ESCAPE)
+	check(flow.current == flow.title, "Esc goes back")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	# Palettes: a locked one refuses, an unlocked one equips.
+	flow.title.selected = 1
+	await _key(KEY_ENTER)
+	check(flow.current == flow.palettes, "Palettes opens")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	await _shot("09-palettes")
+	flow.palettes.selected = flow.palettes.items().find("hotwire")
+	await _key(KEY_ENTER)
+	check(flow.settings.palette_id == "root-access", "a locked palette can't be equipped")
+	flow.palettes.selected = flow.palettes.items().find("plaintext")
+	await _key(KEY_ENTER)
+	check(flow.settings.palette_id == "plaintext", "Plaintext is always unlocked")
+	await _key(KEY_ESCAPE)
+	check(flow.current == flow.title and flow.profile.unseen.is_empty(), "leaving marks new palettes as seen")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	# Rivals: both boards.
+	flow.title.selected = 2
+	await _key(KEY_ENTER)
+	check(flow.current == flow.rivals, "Rivals opens")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	await _key(KEY_RIGHT)
+	check(flow.rivals.tab == 1, "the Ghost board")
+	await _shot("10-rivals-ghost")
+	await _key(KEY_ESCAPE)
+	check(flow.current == flow.title, "Esc goes back")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+
+
 func _ghost() -> void:
-	await _key(KEY_F8)
-	check(gv.mode == GameState.Mode.GHOST, "F8 switches to Ghost mode")
+	flow.title.selected = 0
+	await _key(KEY_ENTER)
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	await _key(KEY_RIGHT)
+	await _key(KEY_ENTER)
+	check(flow.current == gv and gv.mode == GameState.Mode.GHOST, "the mode picker starts a Ghost run")
+	check(flow.settings.mode == "ghost", "and remembers it")
+	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
+	gv.clock_paused = true
 	var cam := gv.board.cam
 	await _click(cam.cell_at(cam.view_size * 0.5))
 	check(gv.started, "ghost run started")
@@ -410,10 +502,13 @@ func _ghost() -> void:
 	check(float(gv.state.signal) == 1.0, "Ghost mode has no draining signal")
 	check(not gv.hud._sig.visible, "the HUD hides the signal meter in Ghost mode")
 	await _shot("07-ghost")
+	var tiles_before := flow.profile.total_tiles
 	await _key(KEY_E, true)
 	check(gv.over and _gs().ended, "Ctrl+E ends a Ghost run")
 	await _frames(2)
 	check(flow.current == flow.over and bool(flow.over.summary.ended), "a banked Ghost run goes straight to game over")
+	check(flow.profile.ghost.size() == 1 and flow.profile.runs == 1, "it goes on the Ghost board only")
+	check(flow.profile.total_tiles == tiles_before, "and adds nothing to the Arcade stats")
 	await _advance(Motion.MOSH_TOTAL_MS + 40.0)
 	await _shot("08-ghost-banked")
 	await _key(KEY_ESCAPE)

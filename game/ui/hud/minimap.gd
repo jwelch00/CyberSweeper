@@ -10,6 +10,7 @@ var view: BoardView
 var origin := Vector2i.ZERO
 
 var _cells := {}      # Vector2i -> 0 zero, 1 number, 2 flag, 3 hit
+var _hits: Array[Vector2i] = []
 var _min := Vector2i.ZERO
 var _max := Vector2i.ZERO
 var _image: Image
@@ -33,6 +34,8 @@ func mark(c: Vector2i, kind: int) -> void:
 		_min = c
 		_max = c
 	_cells[c] = kind
+	if kind == 3 and not _hits.has(c):
+		_hits.append(c)
 	_min = Vector2i(mini(_min.x, c.x), mini(_min.y, c.y))
 	_max = Vector2i(maxi(_max.x, c.x), maxi(_max.y, c.y))
 	_pending.append(c)
@@ -54,6 +57,7 @@ func repaint() -> void:
 
 func clear() -> void:
 	_cells.clear()
+	_hits.clear()
 	_pending.clear()
 	_full = true
 	_dirty = true
@@ -102,7 +106,16 @@ func _plot(c: Vector2i) -> void:
 		2: col = palette.c("warn")
 		_: col = palette.c("danger")
 	var px := maxi(1, int(_scale))
-	_image.fill_rect(Rect2i(Vector2i(Vector2(c) * _scale + _offset), Vector2i(px, px)), col)
+	var at := Vector2i(Vector2(c) * _scale + _offset)
+	if int(_cells[c]) == 2 and px >= 2:
+		# Flags are a diagonal checker, not a solid block, so they differ by
+		# shape as well as color.
+		_image.fill_rect(Rect2i(at, Vector2i(px, px)), palette.c("void"))
+		var h := px / 2
+		_image.fill_rect(Rect2i(at, Vector2i(h, h)), col)
+		_image.fill_rect(Rect2i(at + Vector2i(h, h), Vector2i(px - h, px - h)), col)
+		return
+	_image.fill_rect(Rect2i(at, Vector2i(px, px)), col)
 
 
 func _draw() -> void:
@@ -119,3 +132,10 @@ func _draw() -> void:
 		draw_rect(r, palette.c("ink"), false, 1.5)
 	var s := Vector2(origin) * _scale + _offset
 	draw_rect(Rect2(s - Vector2(2, 2), Vector2(5, 5)), palette.c("accent2"))
+	# Hits: an X in a box, readable without color.
+	var dan := palette.c("danger")
+	for c in _hits:
+		var m := Vector2(c) * _scale + _offset + Vector2.ONE * _scale * 0.5
+		draw_rect(Rect2(m - Vector2(4, 4), Vector2(8, 8)), dan, false, 1.0)
+		draw_line(m - Vector2(3, 3), m + Vector2(3, 3), dan, 1.0)
+		draw_line(m + Vector2(-3, 3), m + Vector2(3, -3), dan, 1.0)

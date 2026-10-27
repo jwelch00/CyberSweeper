@@ -2,11 +2,11 @@
 
 Infinite, no-guessing Minesweeper with a cyberpunk look, for Windows, macOS and Linux. Three links, a draining signal bar, and never a coin flip. Made with Claude.
 
-**Status: milestone 3 of 6** (rendering, input, HUD, game feel), restyled to art direction v2 with the full motion spec (`design/MOTION.md`). Launch plays the jack-in boot, then the title; Jack in starts an Arcade run, and a run ends on LINK SEVERED and the game-over screen. The palettes, rivals and settings screens, pause, the full game over (tally, rival ladder, unlocks), save data and Ghost mode's picker arrive in milestone 4. See `SPEC.md` for the full brief and `design/` for the look. Post-launch ideas (not scheduled) live in `IDEAS.md`.
+**Status: milestone 4 of 6** (palettes, unlocks, save data, rivals, every screen, Ghost mode, accessibility). The whole game is playable: the boot, the title, the mode picker, Arcade and Ghost runs, pause, the full game over, palettes, rivals and settings, with progress saved between launches. Milestone 5 is icons and the cross-platform builds. See `SPEC.md` for the full brief and `design/` for the look (art direction v2 and `design/MOTION.md`). Post-launch ideas (not scheduled) live in `IDEAS.md`.
 
 ## Playing
 
-Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path game`. The boot plays (any key or click skips it), then the title: **Jack in** (Enter) starts a run, and the first click opens it.
+Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path game`. The boot plays (any key or click skips it), then the title: **Jack in** (Enter), pick **Arcade** or **Ghost**, and the first click opens the run.
 
 | Input | Action |
 | --- | --- |
@@ -15,23 +15,24 @@ Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path 
 | Right click | flag (your opinion only; the game never reads flags) |
 | Drag, WASD or arrow keys | pan |
 | Mouse wheel | zoom (0.5× to 2×) |
+| Esc | pause (Resume, Settings, End run, Main menu); back, on every menu |
+| Ctrl+E | end a Ghost run |
 | R or Run it back | new run (game over) |
 | Esc or Main menu | back to the title (game over) |
-| Up/Down, Enter | title menu |
+| E or Equip | equip a palette unlocked this run (game over) |
+| Arrow keys or WASD, Enter | every menu (the mouse works too) |
 | F11 | fullscreen |
+| F3 | FPS and frame-time overlay |
 | M | mute sound |
 
-**Dev keys until milestone 4 adds the screens:**
+## Save data
 
-| Key | Action |
-| --- | --- |
-| F2 | cycle palettes |
-| F3 | FPS and frame-time overlay |
-| F6 | scanlines on/off |
-| F7 | reduce motion on/off (also turns on reduce flashing) |
-| F9 | reduce flashing on/off |
-| F8 | switch between Arcade and Ghost mode (starts a new run) |
-| Ctrl+E | end a Ghost run |
+Settings and progress save to the user data folder as they change, and nothing ever leaves your machine:
+- Windows: `%APPDATA%\CyberSweeper`
+- macOS: `~/Library/Application Support/CyberSweeper`
+- Linux: `~/.local/share/CyberSweeper`
+
+`settings.json` holds the settings and palette; `profile.json` holds Arcade stats, unlocked palettes, rivals beaten and the top 10 runs per mode. Ghost runs only go on the Ghost leaderboard. Writes go to a temp file first, and a file that won't load is kept as `.bad` while the game starts fresh. Delete the folder to start over. `--save-dir DIR` points the game at another folder; the tests and screenshots always use scratch folders under `test-output/`.
 
 Command-line flags go after `--`, for example `godot --path game -- --skip-boot`:
 
@@ -41,7 +42,8 @@ Command-line flags go after `--`, for example `godot --path game -- --skip-boot`
 | `--skip-boot` | start at the title |
 | `--bootseed N`, `--breach clean\|one\|99\|double` | pick the boot breach (the motion lab's `?bootseed=` and `?breach=`) |
 | `--jackedoff` | force the 1-in-10,000 boot card |
-| `--reduce-motion`, `--reduce-flashing` | the accessibility settings (reduce motion also follows the OS setting where Godot can read it) |
+| `--reduce-motion`, `--reduce-flashing` | the accessibility settings (reduce motion also follows the OS setting until you set it) |
+| `--save-dir DIR` | use another save folder |
 
 ## Motion
 
@@ -73,12 +75,15 @@ game/                  Godot project (open game/project.godot in the editor)
     game_state.gd      the API bots and UI call: reveal / chord / flag / tick / end_run
     move_log.gd        every call in order, plus replay files (version, tuning hash, timed actions)
     rules.gd           loads data/tuning.json
+    profile.gd         saved progress: stats, unlocks, rivals beaten, leaderboards, flavor lines
+    save_store.gd      settings.json and profile.json in the user folder, written atomically
     bot.gd             headless player: the three rivals and the tuning profiles
     session.gd         runs a GameState on a worker thread for the UI
   ui/                  the screens (read the core only through Session)
     main.tscn          entry scene; also screenshot (--shot) and gallery modes
     screen_flow.gd     boot -> title -> game -> game over, datamosh between them
-    screens/           boot (breach), title, game over
+    screens/           boot (breach), title, mode picker, pause, settings, palettes, rivals, game over
+                       (deck.gd is their shared drawing kit, menu_screen.gd their mouse/keyboard list)
     game_view.gd       the gameplay screen: input, results -> visuals, effects
     board_view.gd      one-shader board, 256x256 wrap-around cell texture
     board.gdshader     every cell state (hazard-stripe hits too), cipher drift, glow
@@ -130,7 +135,7 @@ From the repo root:
 python tools/run_tests.py
 ```
 
-That's the **fast** suite: unit tests, the UI smoke test and 200 property games, about a minute and a half on 6 cores. The UI smoke test plays the real screens with real mouse and keyboard events: the boot and its skip, the title, a run (checking that the board always shows what the game knows), mine hits and strain, LINK SEVERED, the game-over buttons and Ghost mode. It steps the motion clock by hand, so cards and transitions are deterministic. Other suites:
+That's the **fast** suite: unit tests, the UI smoke test and 200 property games, about a minute and a half on 6 cores. The UI smoke test plays the real screens with real mouse and keyboard events: the boot and its skip, the title, a run (checking that the board always shows what the game knows), mine hits and strain, LINK SEVERED, the game-over buttons and Ghost mode. It also opens every menu: the mode picker, pause, settings (checking the save), palettes (equipping one, refusing a locked one), rivals, and a game over that unlocks a palette. It steps the motion clock by hand, so cards and transitions are deterministic, and saves into a scratch folder. Other suites:
 
 ```bash
 python tools/run_tests.py --suite gate
@@ -190,7 +195,9 @@ This renders seeded screenshots, with the motion clock pinned, into `test-output
 - gameplay in each palette, strain 2 with a hazard tile, a cascade mid-wave;
 - the zoom limits and Ghost mode;
 - the boot at ACCESS DENIED and KEY ACCEPTED, the JACKED IN and JACKED OFF cards;
-- the title, the game over and a datamosh in both halves;
+- the title, the mode picker, pause, settings, palettes and both rivals boards (with a sample profile);
+- the game over as in the mockup, one that unlocks a palette, and a banked Ghost run;
+- a datamosh in both halves;
 - the real screens driven by input (`ui-*.png`).
 
 It needs a display. On a headless Linux box, point `DISPLAY` at an Xvfb.

@@ -3,11 +3,16 @@ extends Control
 ## ...` renders a screenshot and quits (tools/shots.py). Dev flags:
 ## --skip-boot, --bootseed N, --breach clean|one|99|double, --jackedoff,
 ## --reduce-motion, --reduce-flashing, --seed N and --mode ghost (straight
-## into a run).
+## into a run), --save-dir DIR (use another save folder).
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var args := _parse_args(OS.get_cmdline_user_args())
+	# Screenshots and tests never touch a real save.
+	if args.has("save-dir"):
+		SaveStore.dir = args["save-dir"]
+	elif args.has("shot") or args.has("gallery"):
+		SaveStore.dir = ProjectSettings.globalize_path("res://").path_join("../test-output/save-shots")
 	var flow := ScreenFlow.new()
 	add_child(flow)
 	if args.has("reduce-motion"):

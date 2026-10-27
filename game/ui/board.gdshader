@@ -34,6 +34,7 @@ uniform float drift_ms = 0.0;     // cipher drift clock (frozen with reduced mot
 uniform float motion = 1.0;       // 0 with reduced motion
 uniform vec2 hover = vec2(1e9);
 uniform vec2 chord = vec2(1e9);
+uniform float conceal = 0.0;      // 1 while paused: every cell shows encrypted
 uniform float hex_advance = 0.6;
 uniform float digit_dy = 0.0;
 uniform float hex_dy = 0.0;
@@ -69,6 +70,7 @@ float vnoise(vec2 p) {
 }
 
 vec4 cell_data(vec2 c) {
+	if (conceal > 0.5) return vec4(0.0);
 	ivec2 t = ivec2(int(mod(c.x, 256.0)), int(mod(c.y, 256.0)));
 	return texelFetch(cells, t, 0);
 }
@@ -217,6 +219,16 @@ void fragment() {
 			col = tile;
 			if (lp.x < 1.0 || lp.y < 1.0) col = is_hover ? c_accent.rgb : c_edge.rgb;
 			if (is_hover && (lp.x > cs - 1.0 || lp.y > cs - 1.0 || lp.x + lp.y < cut + 1.4)) col = c_accent.rgb;
+			// Chord preview: corner brackets, a shape the hover outline doesn't
+			// have, so it never relies on the tint alone.
+			if (is_chord && !is_hover) {
+				float arm = 0.28 * cs;
+				float th = max(1.5, 1.5 * zoom);
+				bool corner = (lp.x < arm || lp.x > cs - arm) && (lp.y < arm || lp.y > cs - arm);
+				bool rim = lp.x < th + 1.0 || lp.y < th + 1.0 || lp.x > cs - th - 1.0 || lp.y > cs - th - 1.0;
+				bool inset = lp.x >= 1.0 && lp.y >= 1.0 && lp.x <= cs - 1.0 && lp.y <= cs - 1.0;
+				if (corner && rim && inset) col = c_accent.rgb;
+			}
 
 			if (st == HIDDEN) {
 				// cipher byte, re-rolling in a slow diagonal wave

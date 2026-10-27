@@ -59,7 +59,8 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
   - Rustbelt = reach depth 120 in one run.
   - Icebreaker = beat the Netrunner rival.
 - Locked palettes show an "encrypted" preview, the unlock condition and progress (see `design/png/palettes.png`).
-- Save unlocks, settings, cumulative stats and local high scores to the OS-appropriate user data folder (`user://`). Fully offline: no network calls, ever.
+- Save unlocks, settings, cumulative stats and local high scores to the OS-appropriate user data folder (`user://`, named CyberSweeper). Fully offline: no network calls, ever. Each leaderboard keeps the top 10 runs per mode.
+- **Pause** (Esc in a run) stops run time and hides the board behind the cipher, so a pause can't be used to plan. Ending a run from pause records it like any run end.
 
 ## Accessibility (milestone 4, pre-launch)
 - Color is never the only cue anywhere in the UI. Every state must also differ by shape, text or position, in every palette. This covers:
@@ -71,17 +72,15 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
   - locked vs unlocked palettes;
   - rival beaten vs not;
   - the minimap's categories.
-- Already true after milestone 3:
-  - Signal states change the meter's label as well as its color ("signal", "signal low", "signal critical").
-  - Lost links are outlined with a slash; live links are filled.
-  - Hits and flags are different glyphs, and hits also get a box.
+- Done:
+  - Signal states change the meter's tag as well as its color ("signal", "signal low", "signal critical").
+  - Lost links are hatched, outlined blocks; live links are filled.
+  - Hits are hazard-stripe tiles; flags are a flag glyph.
   - Wrong flags get an X.
-  - Hover gets an outline.
-- Still to fix in milestone 4:
-  - The chord preview is a tint only.
-  - The minimap tells zeros, numbers, flags and hits apart by color only.
-  - Check every new screen the same way.
-- Plaintext must keep numbers 1–4 distinct under protanopia, deuteranopia and tritanopia (per its design notes). Every palette keeps the 5.7:1 number contrast, which a unit test already enforces.
+  - Hover gets an outline; the chord preview gets corner brackets.
+  - The minimap draws flags as a checker and hits as an X in a box.
+  - Locked palettes show a lock and an encrypted preview; beaten rivals are struck through and say "beaten"; settings say On/Off in words; the selected menu item gets a bar as well as a lighter fill.
+- Plaintext keeps numbers 1–4 distinct under protanopia, deuteranopia and tritanopia; a unit test simulates all three (Machado 2009) and requires a Lab distance of at least 20 between every pair. Every palette keeps the 5.7:1 number contrast, which a unit test also enforces.
 
 ## Bot simulations and rivals
 - Headless bots at 3 skill levels, each with a per-move think time and an error rate so the signal pressure matters:

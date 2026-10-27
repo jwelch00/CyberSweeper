@@ -15,7 +15,10 @@ same every time:
   ghost.png                           Ghost mode (no signal meter)
   boot-denied.png / boot-accepted.png the boot breach at ACCESS DENIED and KEY ACCEPTED
   card-jacked-in.png / -off.png       the JACKED IN card, and the 1-in-10,000 one
-  title.png / game-over.png           the title and the run end
+  title.png                           the title
+  modes / pause / settings.png        the mode picker, pause (board hidden) and settings
+  palettes.png / rivals(-ghost).png   the palette picker and both leaderboards
+  game-over(-unlock/-ghost).png       the run end: rival down, a palette unlock, a banked Ghost run
   mosh-120.png / mosh-260.png         a datamosh transition, breaking out and snapping in
   ui-*.png                            the real screens driven by input events
 """
@@ -72,6 +75,12 @@ def main() -> int:
                           "--jackedoff"] + boot) and ok
         ok = shot(godot, ["--shot", str(OUT / "title.png"), "--screen", "title"]) and ok
         ok = shot(godot, ["--shot", str(OUT / "game-over.png"), "--screen", "over"]) and ok
+        for sample in ("unlock", "ghost"):
+            ok = shot(godot, ["--shot", str(OUT / f"game-over-{sample}.png"), "--screen", "over", "--sample", sample]) and ok
+        for screen in ("modes", "settings", "palettes", "rivals"):
+            ok = shot(godot, ["--shot", str(OUT / f"{screen}.png"), "--screen", screen]) and ok
+        ok = shot(godot, ["--shot", str(OUT / "rivals-ghost.png"), "--screen", "rivals", "--tab", "ghost"]) and ok
+        ok = shot(godot, ["--shot", str(OUT / "pause.png"), "--screen", "pause"] + run) and ok
         for ms in ("120", "260"):
             ok = shot(godot, ["--shot", str(OUT / f"mosh-{ms}.png"), "--screen", "mosh", "--mosh-ms", ms]) and ok
         code, out = rt.run_godot(godot, BASE[:-2] + ["-s", "res://tests/ui_smoke.gd", "--", "--shots", str(OUT)],

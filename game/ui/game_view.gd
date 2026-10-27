@@ -6,6 +6,8 @@ extends Control
 ## shows comes from Session results; it never reads the GameState.
 
 signal run_over(summary: Dictionary)
+## Esc during a run (ScreenFlow shows the pause screen).
+signal pause_requested
 
 const DRAG_PX := 4.0
 const PAN_PX_PER_SEC := 900.0
@@ -55,6 +57,9 @@ var _beaten := {}
 var _best_shown := false
 var _next_tear := 0.0
 var _next_thump := 0.0
+var _cause := ""
+var _post_mortem := {}
+var paused := false
 
 
 func _ready() -> void:
@@ -158,6 +163,9 @@ func new_run(seed := -1, p_mode: GameState.Mode = mode) -> void:
 	_links = rules.start_links
 	_beaten = {}
 	_best_shown = false
+	_cause = ""
+	_post_mortem = {}
+	set_paused(false)
 	hud.lost_at = []
 	state = {"seed": session.seed, "links": _links, "signal": 1.0, "signal_shown": 1.0, "score": 0, "tiles": 0,
 		"elapsed_ms": 0,
@@ -229,6 +237,7 @@ func _apply(r: Dictionary) -> void:
 				hud.lost_at.append(-1e9)
 			hud.lost_at[i] = board.clock_ms
 		_shake(1.0)
+		_cause = "mine" if not res.hits.is_empty() else "signal"
 		if res.hits.is_empty():
 			sfx.play("link")
 	_links = links
@@ -350,6 +359,7 @@ func cards_between(before: int, now: int) -> Array[Dictionary]:
 
 
 func _game_over(pm: Dictionary) -> void:
+	_post_mortem = pm
 	for c in pm.get("mines", []):
 		board.set_cell(c, BoardView.MINE_SHOWN, 0, -1.0, false)
 	for c in pm.get("wrong_flags", []):
@@ -358,16 +368,43 @@ func _game_over(pm: Dictionary) -> void:
 	run_over.emit(summary())
 
 
+## What the game over screen and the save need. cause: what took the last
+## link ("mine", "signal"), or "ended" for an ended run.
 func summary() -> Dictionary:
+	var ended := bool(state.get("ended", false))
 	return {"score": int(state.get("score", 0)), "depth": int(state.get("deepest", 0)),
 		"elapsed_ms": int(state.get("elapsed_ms", 0)), "tiles": int(state.get("tiles", 0)),
-		"ended": bool(state.get("ended", false)), "mode": mode, "seed": int(state.get("seed", 0)),
-		"best_before": best_before}
+		"ended": ended, "mode": mode, "seed": int(state.get("seed", 0)), "best_before": best_before,
+		"tally": state.get("tally", []), "flags_correct": float(_post_mortem.get("flags_correct", 1.0)),
+		"wrong_flags": _post_mortem.get("wrong_flags", []).size(), "cause": "ended" if ended else _cause}
+
+
+## Pause: run time stops and the board hides behind the cipher, so a pause
+## can't be used to plan.
+func set_paused(on: bool) -> void:
+	paused = on
+	clock_paused = on
+	board.set_conceal(on)
+	lattice.visible = not on
+	popups.visible = not on
+	afterimages.visible = not on
+	cursor.visible = not on
+	board.hover_on = false
+	board.chord_on = false
+	_left_down = false
+
+
+## Ends the run now (pause's End run / Abandon run); it's recorded like any end.
+func end_run() -> void:
+	if session != null and started and not over:
+		session.end_run()
 
 
 # --- input --------------------------------------------------------------------
 
 func _gui_input(event: InputEvent) -> void:
+	if paused:
+		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		match mb.button_index:
@@ -410,9 +447,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if k == null or not k.pressed or k.echo or not is_visible_in_tree():
 		return
 	match k.keycode:
-		KEY_F8:
-			# Dev key until the mode picker (milestone 4): switch mode, new run.
-			new_run(-1, GameState.Mode.GHOST if mode == GameState.Mode.ARCADE else GameState.Mode.ARCADE)
+		KEY_ESCAPE:
+			if not over:
+				pause_requested.emit()
+				get_viewport().set_input_as_handled()
 		KEY_E:
 			# Ghost mode's End run (milestone 4 moves it into the pause menu).
 			if k.ctrl_pressed and mode == GameState.Mode.GHOST and started and not over:
@@ -515,8 +553,23 @@ func _update_effects() -> void:
 func screenshot(args: Dictionary) -> void:
 	if not atlas.is_built:
 		await atlas.built
-	if args.has("palette"):
-		apply_palette(Palette.by_id(args.palette))
+	prepare_shot(args)
+	for i in int(args.get("frames", "6")):
+		await RenderingServer.frame_post_draw
+	set_process(false)
+	_update_effects_frozen(args)
+	board.hover_on = args.get("hover", "auto") != "none"
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	img.save_png(args.shot)
+	print("saved ", args.shot, " ", img.get_size())
+	session.close()
+	get_tree().quit()
+
+
+## Sets up a seeded bot run, framed and frozen, for a screenshot.
+func prepare_shot(args: Dictionary) -> void:
 	var m := GameState.Mode.GHOST if args.get("mode", "arcade") == "ghost" else GameState.Mode.ARCADE
 	session = Session.new(int(args.get("seed", "7")), rules, false, m)
 	mode = m
@@ -554,18 +607,6 @@ func screenshot(args: Dictionary) -> void:
 		board.set_cell(c, BoardView.HIT, 0, board.clock_ms - float(args.hit))
 	if args.has("cascade"):
 		_fake_cascade(float(args.cascade))
-	for i in int(args.get("frames", "6")):
-		await RenderingServer.frame_post_draw
-	set_process(false)
-	_update_effects_frozen(args)
-	board.hover_on = args.get("hover", "auto") != "none"
-	await RenderingServer.frame_post_draw
-	await RenderingServer.frame_post_draw
-	var img := get_viewport().get_texture().get_image()
-	img.save_png(args.shot)
-	print("saved ", args.shot, " ", img.get_size())
-	session.close()
-	get_tree().quit()
 
 
 ## Applies strain and the alarm as they look at the pinned clock.

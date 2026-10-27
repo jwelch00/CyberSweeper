@@ -27,6 +27,7 @@ var hover := Vector2i(1 << 29, 1 << 29)
 var hover_on := false
 var chord_on := false
 var chord_center := Vector2i.ZERO
+var concealed := false
 ## Animation clock (real time, ms). Cell events are stamped with it.
 var clock_ms := 0.0
 var drift_ms := 0.0
@@ -219,6 +220,12 @@ func _settle_animations() -> void:
 			b[3] = b[3] & 127
 			_state[c] = b
 			_write(c)
+
+
+## Pause: every cell shows as an encrypted chip (the shader ignores the data).
+func set_conceal(on: bool) -> void:
+	concealed = on
+	(material as ShaderMaterial).set_shader_parameter("conceal", 1.0 if on else 0.0)
 
 
 ## Raw texel bytes, for tests.

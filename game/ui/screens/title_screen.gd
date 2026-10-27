@@ -2,14 +2,14 @@ class_name TitleScreen
 extends Control
 ## The title (design/png/title-signal.png): the wordmark and tagline over a
 ## real seeded board with the corp lattice, fading in from void on the left,
-## and the menu. Jack in starts an Arcade run. Palettes, Rivals and Settings
-## are shown but wait for milestone 4's screens. Quit isn't in the mockup;
-## a desktop game needs one, so it sits last in the same dim style.
+## and the menu: Jack in (then the mode picker), Palettes, Rivals, Settings.
+## Quit isn't in the mockup; a desktop game needs one, so it sits last in the
+## same dim style.
 
 signal chosen(id: String)
 
-const ITEMS := [["Jack in", "jack_in", true], ["Palettes", "palettes", false], ["Rivals", "rivals", false],
-	["Settings", "settings", false], ["Quit", "quit", true]]
+const ITEMS := [["Jack in", "jack_in", true], ["Palettes", "palettes", true], ["Rivals", "rivals", true],
+	["Settings", "settings", true], ["Quit", "quit", true]]
 const LEFT := 140.0
 const NAV_Y := 444.0
 const ITEM_H := 60.0
