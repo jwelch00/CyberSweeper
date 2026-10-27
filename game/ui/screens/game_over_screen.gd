@@ -59,7 +59,7 @@ func _cards() -> Array[String]:
 		out.append("rival")
 	if not report.get("unlocked_now", []).is_empty():
 		out.append("unlock")
-	if out.is_empty() and report.get("flavor", {}).get("kind", "") == "taunt":
+	if out.is_empty() and report.get("flavor", {}).get("kind", "") in ["taunt", "close", "again"]:
 		out.append("taunt")
 	return out
 
@@ -236,10 +236,35 @@ func _ladder() -> void:
 		if prev > 0 and prev != score:
 			rows.append({"name": "You", "sub": "previous best", "score": prev})
 		rows.sort_custom(func(a, b): return a.score > b.score or (a.score == b.score and a.get("you", false)))
+	# Seven rivals don't fit: show the top of the board and a window around
+	# this run, with a gap marker where rows are skipped.
+	var keep := ladder_window(rows.map(func(row): return row.get("you", false) and row.sub == "this run"), 6)
 	var y := r.position.y + 92.0
-	for i in rows.size():
-		_row(Rect2(x, y, RIGHT_W - 88, 56), i + 1, rows[i], score)
-		y += 62
+	var prev := -1
+	for i in keep:
+		if prev >= 0 and i > prev + 1:
+			Deck.text(self, "mono400", Vector2(x + 18, y + 12), "· · ·", 15, palette.c("inkDim"))
+			y += 20
+		_row(Rect2(x, y, RIGHT_W - 88, 46), i + 1, rows[i], score)
+		y += 52
+		prev = i
+
+
+## Which ladder rows to show when there are more than `size`: the top row,
+## then a window centred on this run (marked true in `is_you`).
+static func ladder_window(is_you: Array, size: int) -> Array[int]:
+	var n := is_you.size()
+	var out: Array[int] = []
+	if n <= size:
+		for i in n:
+			out.append(i)
+		return out
+	var you := maxi(0, is_you.find(true))
+	var lo := clampi(you - (size - 1) / 2, 1, n - (size - 1))
+	out.append(0)
+	for i in range(lo, lo + size - 1):
+		out.append(i)
+	return out
 
 
 func _row(r: Rect2, rank: int, row: Dictionary, score: int) -> void:
@@ -291,7 +316,9 @@ func _card(kind: String, r: Rect2) -> void:
 		"taunt":
 			var f: Dictionary = report.flavor
 			var rv := Profile.rival(f.rival)
-			Deck.text(self, "ui500", Vector2(x, r.position.y + 46), "Next rival", 16, palette.c("inkDim"))
+			var head: String = {"close": "So close", "again": "Top of the board"}.get(f.kind, "Next rival")
+			Deck.text(self, "ui500", Vector2(x, r.position.y + 46), head, 16,
+				palette.c("accent2") if f.kind == "close" else palette.c("inkDim"))
 			var nw := Deck.text(self, "ui700", Vector2(x, r.position.y + 90), rv.name, 32, palette.c("ink"))
 			Deck.text(self, "mono600", Vector2(x + nw + 16, r.position.y + 88), HudText.thousands(int(rv.score)), 20, palette.c("inkDim"))
 			_quote(Vector2(x, r.position.y + 130), f.text, RIGHT_W - 88)

@@ -77,19 +77,37 @@ func test_progress_toward_locked_palettes() -> void:
 func test_rivals_beaten_for_the_first_time_only_once() -> void:
 	var p := Profile.new()
 	var r := p.record(_run(3600))
-	eq(r.beaten_run, ["rookie", "runner"])
-	eq(r.beaten_now, ["rookie", "runner"])
+	eq(r.beaten_run, ["tourist", "rookie", "streamer", "runner"])
+	eq(r.beaten_now, ["tourist", "rookie", "streamer", "runner"])
 	eq(r.flavor.kind, "beaten")
 	eq(r.flavor.rival, "runner", "the best rival beaten gets the line")
+	eq(r.flavor.text, Profile.rival("runner").beaten)
 	r = p.record(_run(3700))
-	eq(r.beaten_run, ["rookie", "runner"], "still beats them")
+	eq(r.beaten_run, ["tourist", "rookie", "streamer", "runner"], "still beats them")
 	eq(r.beaten_now, [], "but not for the first time")
 	eq(r.flavor.kind, "taunt")
-	eq(r.flavor.rival, "netrunner", "the next rival above taunts")
+	eq(r.flavor.rival, "veteran", "the next rival above taunts")
 	r = p.record(_run(100))
-	eq(r.flavor.rival, "rookie", "a low run hears from script.kitty")
-	p.record(_run(8000))
-	eq(p.record(_run(9000)).flavor.kind, "", "nobody left above")
+	eq(r.flavor.rival, "tourist", "a low run hears from lil.byte")
+	eq(p.record(_run(8000)).flavor.rival, "netrunner", "beating everyone for the first time: NULL//SAINT's line")
+	var top: Dictionary = p.record(_run(9000)).flavor
+	eq(top.kind, "again", "above everyone again")
+	check(Profile.rival("netrunner").again.has(top.text), "one of NULL//SAINT's again lines")
+
+
+func test_flavor_lines_follow_the_rules() -> void:
+	var close := Profile.flavor_for(4200, [], 7)
+	eq([close.kind, close.rival], ["close", "veteran"], "within 10% of OXIDE's 4,600")
+	check(Profile.rival("veteran").close.has(close.text))
+	var taunt := Profile.flavor_for(3000, [], 7)
+	eq([taunt.kind, taunt.rival], ["taunt", "runner"], "more than 10% short of mx_halcyon")
+	check(Profile.rival("runner").taunts.has(taunt.text))
+	eq(Profile.flavor_for(3590, [], 7).rival, "runner", "level with a rival isn't past them")
+	eq(Profile.flavor_for(3000, [], 11), Profile.flavor_for(3000, [], 11), "the same run always picks the same line")
+	var seen := {}
+	for seed in 64:
+		seen[Profile.flavor_for(3000, [], seed).text] = true
+	eq(seen.size(), 4, "different runs pick all four taunts")
 
 
 func test_null_saint_bio_changes_once_beaten() -> void:

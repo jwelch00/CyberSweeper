@@ -1,33 +1,137 @@
 {
-  "_about": "Rival scores on the local leaderboard. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. Approved 2026-10-26; NULL//SAINT recalibrated the same day to 7,000 (975 ms think time) so the expert profile, a strong human, beats her in about 19% of runs. bio / taunt / beaten (and NULL//SAINT's bio_after_beaten) are shown on the Rivals and game-over screens (SPEC.md, Rival flavor text).",
-  "rivals": [
-    {
-      "id": "rookie",
-      "name": "script.kitty",
-      "label": "rookie",
-      "score": 1890,
-      "bio": "Learned to netrun last Tuesday. Guesses when she gets bored, which is often.",
-      "taunt": "script.kitty is cackling. Somewhere, a tile she guessed on was safe.",
-      "beaten": "script.kitty has left the chat. She'll be back. She always comes back."
-    },
-    {
-      "id": "runner",
-      "name": "mx_halcyon",
-      "label": "runner",
-      "score": 3590,
-      "bio": "Fast hands, clean chords, zero patience for people who flag every single mine.",
-      "taunt": "mx_halcyon didn't even look up.",
-      "beaten": "mx_halcyon nods once and logs off. From them, that's a standing ovation."
-    },
-    {
-      "id": "netrunner",
-      "name": "NULL//SAINT",
-      "label": "netrunner",
-      "score": 7000,
-      "bio": "Has never guessed. Has never hurried. Has never lost to you.",
-      "bio_after_beaten": "Has never guessed. Has never hurried. Had never lost to you.",
-      "taunt": "She saw that mine three moves before you did.",
-      "beaten": "For the first time on record, NULL//SAINT has nothing to say."
-    }
-  ]
+ "_about": "Rival scores on the local leaderboard, lowest first. Each is that bot's median run over 300 seeded games (docs/tuning-report.md), rounded to 10. script.kitty, mx_halcyon and NULL//SAINT were approved 2026-10-26 (NULL//SAINT recalibrated to 7,000 so the expert profile beats her in about 19% of runs); lil.byte, dex.hype, OXIDE and VESPER were added 2026-10-27 to spread the ladder from 850 to 7,000. Lines (SPEC.md, Rival flavor text): bio on the Rivals screen (NULL//SAINT's bio_after_beaten once she's beaten); on game over, the beaten line the first time a run beats a rival, else a close line within 10% of the next rival up, else one of their taunts, and above everyone one of NULL//SAINT's again lines.",
+ "rivals": [
+  {
+   "id": "tourist",
+   "name": "lil.byte",
+   "label": "tourist",
+   "score": 850,
+   "bio": "First night on the grid. Thinks the hex bytes are decorative. Having the best time.",
+   "taunts": [
+    "lil.byte made it this far. You can too!",
+    "lil.byte left you a sticky note. It says \"you got this :)\"",
+    "lil.byte is still on their first run. It's going great.",
+    "Even lil.byte read the numbers on that one."
+   ],
+   "close": [
+    "lil.byte is cheering for you. Loudly.",
+    "So close! lil.byte is holding the door open."
+   ],
+   "beaten": "lil.byte is so proud of you. They're telling everyone."
+  },
+  {
+   "id": "rookie",
+   "name": "script.kitty",
+   "label": "rookie",
+   "score": 1890,
+   "bio": "Learned to netrun last Tuesday. Guesses when she gets bored, which is often.",
+   "taunts": [
+    "script.kitty is cackling. Somewhere, a tile she guessed on was safe.",
+    "script.kitty says it's not like she wanted you to lose or anything.",
+    "script.kitty guessed six times that run. Five worked. She will not be taking questions.",
+    "script.kitty: \"nyaa~ skill issue.\" She scored 1,890."
+   ],
+   "close": [
+    "script.kitty saw your score and pretended she didn't.",
+    "script.kitty is suddenly very interested in her own run."
+   ],
+   "beaten": "script.kitty has left the chat. She'll be back. She always comes back."
+  },
+  {
+   "id": "streamer",
+   "name": "dex.hype",
+   "label": "streamer",
+   "score": 2700,
+   "bio": "Streams every run to four loyal viewers. Narrates every click. Chords for the clip.",
+   "taunts": [
+    "dex.hype is clipping your run for the fails compilation.",
+    "dex.hype told chat you'd choke. Chat agreed.",
+    "dex.hype: \"Like and subscribe if you saw that mine coming.\"",
+    "dex.hype is reading your score out loud. Slowly."
+   ],
+   "close": [
+    "dex.hype just said \"wait, wait, WAIT\" on stream.",
+    "Chat is spamming your name. dex.hype is sweating."
+   ],
+   "beaten": "dex.hype ended the stream early. \"Technical difficulties.\""
+  },
+  {
+   "id": "runner",
+   "name": "mx_halcyon",
+   "label": "runner",
+   "score": 3590,
+   "bio": "Fast hands, clean chords, zero patience for people who flag every single mine.",
+   "taunts": [
+    "mx_halcyon didn't even look up.",
+    "mx_halcyon finished a whole run while you read this.",
+    "mx_halcyon has a note on you. It says \"flags too much.\"",
+    "mx_halcyon would like the board back when you're done."
+   ],
+   "close": [
+    "mx_halcyon looked up. Briefly.",
+    "mx_halcyon is chording faster now. Unrelated, surely."
+   ],
+   "beaten": "mx_halcyon nods once and logs off. From them, that's a standing ovation."
+  },
+  {
+   "id": "veteran",
+   "name": "OXIDE",
+   "label": "veteran",
+   "score": 4600,
+   "bio": "Wrote half the lattice's ICE before Tetsukage let her go. Now she breaks it for fun, and slowly.",
+   "taunts": [
+    "OXIDE built that mine. She remembers where it is.",
+    "OXIDE: \"Back in my day the lattice had edges.\"",
+    "OXIDE doesn't flag. She just knows.",
+    "OXIDE has outlived three of your kind this week."
+   ],
+   "close": [
+    "OXIDE put her coffee down.",
+    "OXIDE is watching your run with professional interest."
+   ],
+   "beaten": "OXIDE raises her mug to you, then goes back to bed."
+  },
+  {
+   "id": "ace",
+   "name": "VESPER",
+   "label": "ace",
+   "score": 5800,
+   "bio": "Ran with NULL//SAINT once. Has been second on every board since, and has opinions about it.",
+   "taunts": [
+    "VESPER chorded that whole region while you were still hovering.",
+    "VESPER doesn't remember your name. She remembers your score.",
+    "VESPER: \"Cute. Now do it with the signal low.\"",
+    "VESPER is busy chasing someone else. It isn't you."
+   ],
+   "close": [
+    "VESPER glanced back. She never does that.",
+    "VESPER just sped up. Take it as a compliment."
+   ],
+   "beaten": "VESPER says nothing and queues another run. Then another."
+  },
+  {
+   "id": "netrunner",
+   "name": "NULL//SAINT",
+   "label": "netrunner",
+   "score": 7000,
+   "bio": "Has never guessed. Has never hurried. Has never lost to you.",
+   "bio_after_beaten": "Has never guessed. Has never hurried. Had never lost to you.",
+   "taunts": [
+    "She saw that mine three moves before you did.",
+    "NULL//SAINT has not noticed you yet.",
+    "NULL//SAINT is still playing her run from last Tuesday.",
+    "Somewhere, NULL//SAINT decrypted another tile."
+   ],
+   "close": [
+    "NULL//SAINT has noticed you.",
+    "For a moment, NULL//SAINT stopped."
+   ],
+   "beaten": "For the first time on record, NULL//SAINT has nothing to say.",
+   "again": [
+    "NULL//SAINT has started taking notes.",
+    "NULL//SAINT moved her runs to a later hour.",
+    "NULL//SAINT said one word. Nobody heard it."
+   ]
+  }
+ ]
 }

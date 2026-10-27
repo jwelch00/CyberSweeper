@@ -31,7 +31,8 @@ import run_tests as rt  # noqa: E402  (shared Godot discovery and launching)
 ROOT = rt.ROOT
 OUT = rt.OUT / "sim"
 TUNING_SECTIONS = {"links", "signal", "density", "start", "solver", "generator"}
-PROFILES = ["rookie", "runner", "netrunner", "reference", "expert"]
+RIVALS = [r["id"] for r in json.loads((ROOT / "game" / "data" / "rivals.json").read_text())["rivals"]]
+PROFILES = RIVALS + ["reference", "expert"]
 
 
 # --- running ------------------------------------------------------------------
@@ -176,6 +177,15 @@ def targets(runs: dict[str, list[dict]], summary: dict[str, dict]) -> list[tuple
         pace = [summary[p]["tiles_per_min"] for p in ("rookie", "runner", "netrunner")]
         out.append(("pace: rookie < runner < netrunner (tiles/min)", " < ".join(f"{v:.0f}" for v in pace),
                     pace[0] < pace[1] < pace[2]))
+    present = [p for p in RIVALS if p in summary]
+    if len(present) > 1:
+        meds = [summary[p]["score"]["median"] for p in present]
+        out.append(("rival medians climb, lil.byte to NULL//SAINT", " < ".join(f"{v:,.0f}" for v in meds),
+                    all(a < b for a, b in zip(meds, meds[1:]))))
+    for p in present:
+        v = int(approved_rivals()[p]["score"])
+        med = summary[p]["score"]["median"]
+        out.append((f"{approved_rivals()[p]['name']} median within 2% of {v:,}", f"{med:,.0f}", abs(med - v) <= 0.02 * v))
     if "expert" in summary:
         saint = approved_rivals()["netrunner"]["score"]
         q = 1 - rank_in([r["score"] for r in runs["expert"]], saint + 0.5)
@@ -238,9 +248,9 @@ def write_report(path: Path, result: dict, summary: dict, sensitivity: list[dict
              "A cell it had already worked out right next to its last click is a quick follow-up click, the way "
              "people clear a solved patch. It only looks for safe cells within *attention* cells of its last "
              "click; with none in view it guesses locally (*local guess*) or searches the board, which costs "
-             "extra time. *Misclick* sends the click to a random hidden neighbour. Runner and Netrunner flag "
-             "and chord when that opens 3+ cells. NULL//SAINT never acts faster than 500 ms. `reference` is "
-             "not a rival: it stands in for a decent human and sets the run-length target.")
+             "extra time. *Misclick* sends the click to a random hidden neighbour. Bots that chord flag "
+             "and chord when that opens 3+ cells. NULL//SAINT never acts faster than 500 ms. `reference` and "
+             "`expert` are not rivals: they stand in for a decent and a strong human.")
     L.append("")
     L.append("| Profile | Name | Tier | Think median / follow-up / floor | Misclick | Attention | Local guess | Chords |")
     L.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
@@ -303,17 +313,20 @@ def write_report(path: Path, result: dict, summary: dict, sensitivity: list[dict
     L.append("")
     L.append("Each rival's score is its bot's median run, rounded to 10, approved in `game/data/rivals.json`. "
              "NULL//SAINT was recalibrated (975 ms think time) so the expert, a strong human, beats her in "
-             "about one run in five; a decent player never does. Small differences between a median here and "
-             "the approved score are run-to-run noise.")
+             "about one run in five; a decent player never does. lil.byte, dex.hype, OXIDE and VESPER were "
+             "added later to spread the ladder from 850 to 7,000; each bot's think time was tuned so its median "
+             "lands on its score. Small differences between a median here and the approved score are "
+             "run-to-run noise.")
     L.append("")
     L.append("| Rival | Bot | Median this run | Approved score | Reference beats it | Expert beats it |")
     L.append("| --- | --- | --- | --- | --- | --- |")
     approved = approved_rivals()
     ref_scores = [r["score"] for r in ref_runs]
     exp_scores = [r["score"] for r in runs.get("expert", [])]
-    for p, label in (("rookie", "ROOKIE"), ("runner", "RUNNER"), ("netrunner", "NETRUNNER")):
+    for p in RIVALS:
         if p not in summary:
             continue
+        label = approved[p]["label"].upper()
         v = int(approved[p]["score"])
         beat_ref = f"{(1 - rank_in(ref_scores, v + 0.5)) * 100:.0f}% of runs" if ref_scores else "n/a"
         beat_exp = f"{(1 - rank_in(exp_scores, v + 0.5)) * 100:.0f}% of runs" if exp_scores else "n/a"

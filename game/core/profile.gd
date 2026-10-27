@@ -101,8 +101,8 @@ func best(mode: GameState.Mode) -> int:
 ## elapsed_ms, mode, seed, cause ("mine", "signal", "ended"), date}. Returns
 ## {previous_best, new_best, rank (0-based on its leaderboard, -1 if off it),
 ## beaten_run (rival ids this run beat), beaten_now (beaten for the first
-## time), unlocked_now (palette ids), flavor {kind ("beaten" | "taunt" | ""),
-## rival, text}}.
+## time), unlocked_now (palette ids), flavor {kind ("beaten" | "close" |
+## "taunt" | "again"), rival, text}}.
 func record(run: Dictionary) -> Dictionary:
 	var mode: GameState.Mode = run.get("mode", GameState.Mode.ARCADE)
 	var score := int(run.get("score", 0))
@@ -137,21 +137,34 @@ func record(run: Dictionary) -> Dictionary:
 			unlocked.append(pid)
 			unseen.append(pid)
 			out.unlocked_now.append(pid)
-	out.flavor = flavor_for(score, out.beaten_now)
+	out.flavor = flavor_for(score, out.beaten_now, entry.seed)
 	return out
 
 
-## The quiet one-line quote on game over: the beaten line of the best rival
-## beaten for the first time, otherwise the taunt of the next rival above
-## the score (none once every rival is below it).
-static func flavor_for(score: int, beaten_now: Array) -> Dictionary:
+## The quiet one-line quote on game over (SPEC.md, Rival flavor text):
+## 1. the beaten line of the best rival beaten for the first time;
+## 2. else, within 10% of the next rival up, one of their close lines;
+## 3. else one of that rival's taunts;
+## 4. above everyone, one of NULL//SAINT's again lines.
+## The pick is seeded by the run, so a run always shows the same line.
+static func flavor_for(score: int, beaten_now: Array, seed := 0) -> Dictionary:
 	if not beaten_now.is_empty():
 		var r := rival(beaten_now.back())
 		return {"kind": "beaten", "rival": r.id, "text": r.beaten}
 	for r in rivals():
 		if int(r.score) >= score:
-			return {"kind": "taunt", "rival": r.id, "text": r.taunt}
-	return {"kind": "", "rival": "", "text": ""}
+			var close := score * 10 >= int(r.score) * 9
+			var kind := "close" if close else "taunt"
+			return {"kind": kind, "rival": r.id, "text": pick(r.get("close" if close else "taunts", []), seed)}
+	var top: Dictionary = rivals().back()
+	return {"kind": "again", "rival": top.id, "text": pick(top.get("again", []), seed)}
+
+
+## One line from a list, chosen by the run's seed.
+static func pick(lines: Array, seed: int) -> String:
+	if lines.is_empty():
+		return ""
+	return String(lines[CsHash.mix32(seed) % lines.size()])
 
 
 ## A rival's bio for the Rivals screen; NULL//SAINT's changes for good once

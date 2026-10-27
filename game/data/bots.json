@@ -1,5 +1,29 @@
 {
-  "_about": "Headless bot profiles. The three rivals plus two tuning-only profiles: 'reference' (a decent human, sets run length) and 'expert' (a strong human, checks NULL//SAINT is beatable). Times are milliseconds of simulated time. attention = how far (cells) from its last click a bot looks for a safe move; with nothing safe in view it guesses locally with probability local_guess, otherwise it searches the whole board, paying search_ms. followup_ms = time for a quick extra click on a cell it had already worked out, next to its last click (people click a solved patch in quick succession). min_move_ms = the floor for any action (NULL//SAINT: 500, human pace).",
+  "_about": "Headless bot profiles. The seven rivals plus two tuning-only profiles: 'reference' (a decent human, sets run length) and 'expert' (a strong human, checks NULL//SAINT is beatable). Times are milliseconds of simulated time. attention = how far (cells) from its last click a bot looks for a safe move; with nothing safe in view it guesses locally with probability local_guess, otherwise it searches the whole board, paying search_ms. followup_ms = time for a quick extra click on a cell it had already worked out, next to its last click (people click a solved patch in quick succession). min_move_ms = the floor for any action (NULL//SAINT: 500, human pace).",
+  "tourist": {
+    "name": "lil.byte",
+    "label": "tourist",
+    "tier": 1,
+    "think_median_ms": 2410,
+    "think_sigma": 0.5,
+    "think_min_ms": 1100,
+    "tier_extra_ms": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "guess_extra_ms": 2000,
+    "misclick": 0.02,
+    "chord": false,
+    "chord_min": 3,
+    "flag_ms": 400,
+    "attention": 6,
+    "local_guess": 0.4,
+    "search_ms": 3500,
+    "followup_ms": 650,
+    "min_move_ms": 300
+  },
   "rookie": {
     "name": "script.kitty",
     "label": "rookie",
@@ -7,7 +31,12 @@
     "think_median_ms": 1750,
     "think_sigma": 0.45,
     "think_min_ms": 900,
-    "tier_extra_ms": [0, 0, 0, 0],
+    "tier_extra_ms": [
+      0,
+      0,
+      0,
+      0
+    ],
     "guess_extra_ms": 1500,
     "misclick": 0.006,
     "chord": false,
@@ -19,6 +48,30 @@
     "followup_ms": 450,
     "min_move_ms": 200
   },
+  "streamer": {
+    "name": "dex.hype",
+    "label": "streamer",
+    "tier": 2,
+    "think_median_ms": 1965,
+    "think_sigma": 0.45,
+    "think_min_ms": 700,
+    "tier_extra_ms": [
+      0,
+      0,
+      900,
+      0
+    ],
+    "guess_extra_ms": 1400,
+    "misclick": 0.018,
+    "chord": true,
+    "chord_min": 3,
+    "flag_ms": 280,
+    "attention": 8,
+    "local_guess": 0.18,
+    "search_ms": 2000,
+    "followup_ms": 400,
+    "min_move_ms": 200
+  },
   "runner": {
     "name": "mx_halcyon",
     "label": "runner",
@@ -26,7 +79,12 @@
     "think_median_ms": 1750,
     "think_sigma": 0.4,
     "think_min_ms": 600,
-    "tier_extra_ms": [0, 0, 700, 0],
+    "tier_extra_ms": [
+      0,
+      0,
+      700,
+      0
+    ],
     "guess_extra_ms": 1200,
     "misclick": 0.01,
     "chord": true,
@@ -38,6 +96,54 @@
     "followup_ms": 350,
     "min_move_ms": 200
   },
+  "veteran": {
+    "name": "OXIDE",
+    "label": "veteran",
+    "tier": 3,
+    "think_median_ms": 1430,
+    "think_sigma": 0.35,
+    "think_min_ms": 600,
+    "tier_extra_ms": [
+      0,
+      0,
+      400,
+      900
+    ],
+    "guess_extra_ms": 600,
+    "misclick": 0.004,
+    "chord": true,
+    "chord_min": 3,
+    "flag_ms": 220,
+    "attention": 16,
+    "local_guess": 0.03,
+    "search_ms": 1200,
+    "followup_ms": 450,
+    "min_move_ms": 300
+  },
+  "ace": {
+    "name": "VESPER",
+    "label": "ace",
+    "tier": 3,
+    "think_median_ms": 1240,
+    "think_sigma": 0.3,
+    "think_min_ms": 500,
+    "tier_extra_ms": [
+      0,
+      0,
+      300,
+      800
+    ],
+    "guess_extra_ms": 400,
+    "misclick": 0.004,
+    "chord": true,
+    "chord_min": 3,
+    "flag_ms": 200,
+    "attention": 24,
+    "local_guess": 0.02,
+    "search_ms": 900,
+    "followup_ms": 380,
+    "min_move_ms": 400
+  },
   "netrunner": {
     "name": "NULL//SAINT",
     "label": "netrunner",
@@ -45,7 +151,12 @@
     "think_median_ms": 975,
     "think_sigma": 0.3,
     "think_min_ms": 500,
-    "tier_extra_ms": [0, 0, 300, 700],
+    "tier_extra_ms": [
+      0,
+      0,
+      300,
+      700
+    ],
     "guess_extra_ms": 0,
     "misclick": 0.003,
     "chord": true,
@@ -64,7 +175,12 @@
     "think_median_ms": 1800,
     "think_sigma": 0.45,
     "think_min_ms": 700,
-    "tier_extra_ms": [0, 0, 1200, 0],
+    "tier_extra_ms": [
+      0,
+      0,
+      1200,
+      0
+    ],
     "guess_extra_ms": 1500,
     "misclick": 0.015,
     "chord": true,
@@ -83,7 +199,12 @@
     "think_median_ms": 1100,
     "think_sigma": 0.4,
     "think_min_ms": 450,
-    "tier_extra_ms": [0, 0, 500, 1000],
+    "tier_extra_ms": [
+      0,
+      0,
+      500,
+      1000
+    ],
     "guess_extra_ms": 800,
     "misclick": 0.006,
     "chord": true,
