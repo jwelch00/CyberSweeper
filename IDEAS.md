@@ -122,6 +122,25 @@ The lore: every run is a scheduled hacking event, hosted by a fringe netrunner g
   - the game over could say ICED instead of LINK SEVERED. That changes `design/MOTION.md`'s card, so it needs a design proposal first.
 - **Compared with Versus mode:** Versus races one rival on a mirrored board. An event races everyone, each on their own board, so it needs none of Versus's identical-board work.
 
+## Signal grace near empty (a rebalance for humans)
+
+When you're playing well but haven't landed a good chord or cascade, the signal still runs out, and that feels really bad. Humans sometimes need just a hair more thinking time than the bots.
+
+- **The rule:** when the on-screen signal bar is at about 10–15%, uncovering any number of tiles freezes the bar for a few seconds (about 3 to start). One tile is enough. Chords and cascades count too.
+- **Humans only:** the bots keep the original rule, so every rival's score stays exactly as it is (847 to 7,013).
+
+### Notes for whoever builds it
+
+- **Still pure minesweeper:** this only changes when the existing signal drains. It adds no resource and no pickup. It's Arcade only, since Ghost has no signal.
+- **What the player sees:** the bar uses a false scale (`signal.display_curve`). Define the 10–15% band on the shown bar and convert it with the same curve, so it matches what's on screen.
+- **Settings in `tuning.json`:** the band, the freeze length, and a switch that player runs turn on and bot runs leave off. The tuning hash then keeps replays with and without grace apart.
+- **Exact for replays:** the freeze has to be part of the integer signal drain (`Rules.drained_u`) and the exact moment a run ends. That way a replay still reproduces the run to the millisecond however the frames fall (`tests/unit/test_replay.gd`).
+- **Stacking:**
+  - a reveal during a freeze restarts it at full length, without adding to it;
+  - it can trigger again and again in one dip, because every trigger needs real progress and reveals refill the bar out of the band anyway.
+- **Showing it:** the meter shows the hold with a "hold" tag next to "signal low" and the bar's drain stopped, never with color alone. The low-signal alarm pauses during the hold.
+- **Rivals get easier, on purpose:** with the bots on the old rule, a person beats each rival a bit more often than the calibration says. Have `tools/simulate.py` measure how much: run the reference and expert profiles with grace on against the unchanged rival scores, and report the new beat rates next to the old ones.
+
 ## More ideas
 
 ### Gameplay
