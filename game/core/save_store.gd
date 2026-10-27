@@ -39,8 +39,15 @@ static func save_json(name: String, d: Dictionary) -> bool:
 	if f == null:
 		push_warning("can't write %s" % tmp)
 		return false
-	f.store_string(JSON.stringify(d, "\t"))
+	var text := JSON.stringify(d, "\t")
+	f.store_string(text)
+	var err := f.get_error()
 	f.close()
+	# A failed or cut-off write (a full disk) never replaces the good file.
+	if err != OK or FileAccess.get_file_as_string(tmp) != text:
+		push_warning("writing %s failed; the old save is kept" % tmp)
+		DirAccess.remove_absolute(tmp)
+		return false
 	if FileAccess.file_exists(path(name)):
 		DirAccess.remove_absolute(path(name))
 	return DirAccess.rename_absolute(tmp, path(name)) == OK
@@ -52,3 +59,32 @@ static func load_profile() -> Profile:
 
 static func save_profile(p: Profile) -> bool:
 	return save_json(PROFILE, p.to_dict())
+
+
+# --- typed reads ------------------------------------------------------------------
+# A saved file can be hand-edited or come from an older build. Each read gives
+# the default for a missing or wrong-typed value instead of an error (JSON
+# numbers arrive as floats).
+
+static func int_of(d: Dictionary, key: String, default := 0) -> int:
+	var v: Variant = d.get(key, default)
+	if v is int or v is float:
+		return int(v)
+	if v is String and v.is_valid_int():
+		return v.to_int()
+	return default
+
+
+static func float_of(d: Dictionary, key: String, default := 0.0) -> float:
+	var v: Variant = d.get(key, default)
+	return float(v) if v is int or v is float else default
+
+
+static func bool_of(d: Dictionary, key: String, default := false) -> bool:
+	var v: Variant = d.get(key, default)
+	return v if v is bool else default
+
+
+static func str_of(d: Dictionary, key: String, default := "") -> String:
+	var v: Variant = d.get(key, default)
+	return v if v is String else default

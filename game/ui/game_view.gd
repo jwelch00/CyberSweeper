@@ -11,6 +11,8 @@ signal pause_requested
 
 const DRAG_PX := 4.0
 const PAN_PX_PER_SEC := 900.0
+## The most run time one frame may add (see _process).
+const MAX_FRAME_MS := 250.0
 
 var settings := GameSettings.new()
 var rules := Rules.load_default()
@@ -21,14 +23,13 @@ var state := {}
 var origin := Vector2i.ZERO
 var started := false
 var over := false
-## Stops run time (no ticks are sent). Milestone 4's pause screen uses it; tests
-## use it so waiting on results is deterministic.
+## Stops run time (no ticks are sent). The pause screen uses it; tests use it
+## so waiting on results is deterministic.
 var clock_paused := false
 ## Screen effects (post, title cards, datamosh). ScreenFlow passes its own;
 ## standing alone, the view makes one.
 var fx: ScreenFx
-## Best score this session in this mode, for the NEW BEST card (0 = none yet).
-## Milestone 4's save data makes it the real personal best.
+## The saved best score in this mode, for the NEW BEST card (0 = none yet).
 var best_before := 0
 ## Current strain level (0..2), see Strain.
 var strain := 0
@@ -66,8 +67,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_rng.randomize()
-	var rv: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/rivals.json"))
-	_rivals = rv.rivals if rv is Dictionary else []
+	_rivals = Profile.rivals()
 	if fx == null:
 		fx = ScreenFx.new()
 		add_child(fx)
@@ -188,7 +188,8 @@ func _process(delta: float) -> void:
 	cursor.busy_since = (cursor.busy_since if cursor.busy_since >= 0.0 else cursor.clock_ms) if session.busy() else -1.0
 	_pan_keys(delta)
 	if started and not over and not clock_paused and not session.busy():
-		_tick_acc += delta * 1000.0
+		# One long frame (a stall, a laptop waking up) can't drain the signal in one go.
+		_tick_acc += minf(delta * 1000.0, MAX_FRAME_MS)
 		if _tick_acc >= 1.0:
 			var ms := int(_tick_acc)
 			_tick_acc -= ms
@@ -452,7 +453,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				pause_requested.emit()
 				get_viewport().set_input_as_handled()
 		KEY_E:
-			# Ghost mode's End run (milestone 4 moves it into the pause menu).
+			# Ghost mode's End run, a shortcut for the pause menu's.
 			if k.ctrl_pressed and mode == GameState.Mode.GHOST and started and not over:
 				session.end_run()
 

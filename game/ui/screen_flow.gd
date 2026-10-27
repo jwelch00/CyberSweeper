@@ -29,6 +29,8 @@ var _settings_back: Control
 ## Where a run that's ending goes: the game over screen, or the title when
 ## Main menu was picked from pause.
 var _after_run := "over"
+## See _notification.
+var pause_on_focus_loss := true
 
 
 func _ready() -> void:
@@ -202,6 +204,14 @@ func _on_mode(id: String) -> void:
 	go(game, func(): _new_run(m))
 
 
+## Pauses a run when the game loses focus (alt-tab, a laptop going to sleep),
+## so the signal never drains while nobody's looking. Screenshots and the
+## smoke test turn it off: a stray focus event there would pause them.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and pause_on_focus_loss and game != null and game.started:
+		_on_pause()
+
+
 func _on_pause() -> void:
 	if current != game or game.over:
 		return
@@ -324,6 +334,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 ## mosh (--mosh-ms into a title -> game over datamosh). Menus show a sample
 ## profile; main.gd points saves at a scratch folder in this mode.
 func screenshot(args: Dictionary) -> void:
+	pause_on_focus_loss = false
 	if not game.atlas.is_built:
 		await game.atlas.built
 	if args.has("palette"):

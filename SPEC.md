@@ -60,7 +60,7 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
   - Icebreaker = beat the Netrunner rival.
 - Locked palettes show an "encrypted" preview, the unlock condition and progress (see `design/png/palettes.png`).
 - Save unlocks, settings, cumulative stats and local high scores to the OS-appropriate user data folder (`user://`, named CyberSweeper). Fully offline: no network calls, ever. Each leaderboard keeps the top 10 runs per mode.
-- **Pause** (Esc in a run) stops run time and hides the board behind the cipher, so a pause can't be used to plan. Ending a run from pause records it like any run end.
+- **Pause** (Esc in a run) stops run time and hides the board behind the cipher, so a pause can't be used to plan. Ending a run from pause records it like any run end. A run in progress also pauses itself when the game loses focus (alt-tab, a laptop going to sleep), and no single frame adds more than 250 ms of run time, so a stall can't drain the signal.
 
 ## Accessibility (milestone 4, pre-launch)
 - Color is never the only cue anywhere in the UI. Every state must also differ by shape, text or position, in every palette. This covers:

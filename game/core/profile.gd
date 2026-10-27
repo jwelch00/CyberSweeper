@@ -207,13 +207,8 @@ func to_dict() -> Dictionary:
 ## so older and hand-edited files still load.
 static func from_dict(d: Dictionary) -> Profile:
 	var p := Profile.new()
-	p.runs = int(d.get("runs", 0))
-	p.total_tiles = int(d.get("total_tiles", 0))
-	p.best_depth = int(d.get("best_depth", 0))
-	p.best_score = int(d.get("best_score", 0))
-	p.time_ms = int(d.get("time_ms", 0))
-	p.deaths_mine = int(d.get("deaths_mine", 0))
-	p.deaths_signal = int(d.get("deaths_signal", 0))
+	for k in ["runs", "total_tiles", "best_depth", "best_score", "time_ms", "deaths_mine", "deaths_signal"]:
+		p.set(k, maxi(0, SaveStore.int_of(d, k)))
 	for k in ["unlocked", "unseen", "beaten"]:
 		var src: Variant = d.get(k, [])
 		if src is Array:
@@ -226,9 +221,10 @@ static func from_dict(d: Dictionary) -> Profile:
 		if src is Array:
 			var dst: Array[Dictionary] = p.get(k)
 			for v in src:
-				if v is Dictionary and v.has("score"):
-					dst.append({"score": int(v.score), "tiles": int(v.get("tiles", 0)), "depth": int(v.get("depth", 0)),
-						"ms": int(v.get("ms", 0)), "date": String(v.get("date", "")), "seed": int(v.get("seed", 0))})
+				if v is Dictionary and (v.get("score") is int or v.get("score") is float):
+					dst.append({"score": SaveStore.int_of(v, "score"), "tiles": SaveStore.int_of(v, "tiles"),
+						"depth": SaveStore.int_of(v, "depth"), "ms": SaveStore.int_of(v, "ms"),
+						"date": SaveStore.str_of(v, "date"), "seed": SaveStore.int_of(v, "seed")})
 			dst.sort_custom(func(a, b): return int(a.score) > int(b.score))
 			while dst.size() > TOP:
 				dst.pop_back()

@@ -69,6 +69,26 @@ func test_replays_from_another_build_are_refused() -> void:
 	check(rules.tuning_hash() != retuned.tuning_hash(), "and changes with the tuning")
 
 
+func test_damaged_replays_are_refused_not_played() -> void:
+	var rules := Rules.load_default()
+	var r := _bot_run("rookie", 5, GameState.Mode.ARCADE, 3).move_log.to_replay()
+	var damaged := {"format": {}, "seed": null, "mode": 7, "end_ms": "soon", "actions": "none"}
+	for key in damaged:
+		var bad := r.duplicate(true)
+		bad[key] = damaged[key]
+		check(MoveLog.replay_problem(bad, rules) != "", "a bad %s is refused" % key)
+	var no_seed := r.duplicate(true)
+	no_seed.erase("seed")
+	check(MoveLog.replay_problem(no_seed, rules) != "", "a missing seed is refused")
+	for a in [[0, 1, 2], ["0", 1, 2, 3], [9, 1, 2, 3], "reveal", [0, null, 2, 3]]:
+		var bad := r.duplicate(true)
+		bad.actions.append(a)
+		check(MoveLog.replay_problem(bad, rules) != "", "a bad action is refused: %s" % str(a))
+	# Through JSON, numbers come back as floats and still play.
+	var round_trip: Dictionary = JSON.parse_string(JSON.stringify(r))
+	eq(MoveLog.replay_problem(round_trip, rules), "", "a replay read back from JSON is fine")
+
+
 func test_every_action_is_timed() -> void:
 	var gs := _bot_run("runner", 12, GameState.Mode.ARCADE, 2)
 	var last := -1

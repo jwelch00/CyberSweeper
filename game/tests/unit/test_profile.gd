@@ -172,6 +172,31 @@ func test_profile_round_trips_and_tolerates_junk() -> void:
 	eq(junk.ghost.size(), 0)
 
 
+## Valid JSON with the wrong types used to crash the load on every launch
+## (the .bad fallback only catches files that don't parse).
+func test_wrong_typed_saves_load_with_defaults() -> void:
+	var p := Profile.from_dict({"runs": null, "best_score": {}, "total_tiles": [1], "best_depth": -4, "time_ms": true,
+		"beaten": "runner", "arcade": [{"score": {}}, {"score": null}, {"score": 900, "tiles": "x", "date": 7, "seed": null},
+		"junk", 5], "ghost": {"score": 1}})
+	eq([p.runs, p.best_score, p.total_tiles, p.best_depth, p.time_ms], [0, 0, 0, 0, 0], "odd counts are zero")
+	eq(p.beaten, [] as Array[String])
+	eq(p.arcade, [{"score": 900, "tiles": 0, "depth": 0, "ms": 0, "date": "", "seed": 0}] as Array[Dictionary],
+		"only the entry with a real score survives, with its odd fields defaulted")
+	eq(p.ghost.size(), 0)
+	var d := GameSettings.new().to_dict()
+	var s := GameSettings.from_dict({"palette": null, "scanlines": "yes", "reduce_motion": {}, "mode": [1], "sfx": 1,
+		"volume": "loud", "fullscreen": null, "show_fps": [], "reduce_flashing": 0.5})
+	eq(s.to_dict(), d, "every odd setting falls back to its default")
+	check(not s.reduced_motion_set, "an odd reduce_motion doesn't count as the player's choice")
+	var old := SaveStore.dir
+	SaveStore.dir = _scratch()
+	var f := FileAccess.open(SaveStore.path("profile.json"), FileAccess.WRITE)
+	f.store_string("{\"runs\": null, \"arcade\": [{\"score\": {}}]}")
+	f.close()
+	eq(SaveStore.load_profile().runs, 0, "a wrong-typed file on disk loads too")
+	SaveStore.dir = old
+
+
 func test_save_store_writes_atomically_and_survives_corruption() -> void:
 	var old := SaveStore.dir
 	SaveStore.dir = _scratch()
@@ -190,6 +215,12 @@ func test_save_store_writes_atomically_and_survives_corruption() -> void:
 	eq(SaveStore.load_profile().runs, 0, "a corrupt file starts fresh")
 	check(FileAccess.file_exists(SaveStore.path("profile.json.bad")), "and is kept as .bad")
 	eq(SaveStore.load_json("missing.json"), {}, "a missing file is empty")
+	# A write that can't finish leaves the good save alone.
+	SaveStore.save_profile(p)
+	DirAccess.make_dir_absolute(SaveStore.path("profile.json.tmp"))
+	check(not SaveStore.save_profile(Profile.new()), "a failed write says so")
+	eq(SaveStore.load_profile().best_score, 1234, "and the old save is kept")
+	DirAccess.remove_absolute(SaveStore.path("profile.json.tmp"))
 	SaveStore.dir = old
 
 

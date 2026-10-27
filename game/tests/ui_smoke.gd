@@ -44,6 +44,7 @@ func _run() -> void:
 		DirAccess.remove_absolute(save.path_join(f))
 	SaveStore.dir = save
 	flow = ScreenFlow.new()
+	flow.pause_on_focus_loss = false   # a stray focus event must not pause a check
 	root.add_child(flow)
 	flow.size = root.get_visible_rect().size
 	gv = flow.game
@@ -346,6 +347,13 @@ func _arcade() -> void:
 	gv.clock_paused = true
 	await _settle()
 	check(float(gv.state.signal) < 1.0, "the signal drains while the clock runs")
+	# One huge frame (a laptop waking up) adds at most MAX_FRAME_MS of run time.
+	var ms0 := _gs().elapsed_ms
+	gv.clock_paused = false
+	gv._process(600.0)
+	gv.clock_paused = true
+	await _settle()
+	check(_gs().elapsed_ms - ms0 <= int(GameView.MAX_FRAME_MS) + 1, "a ten-minute frame adds at most a quarter second")
 
 	# A mine hit costs a link and shows the hit: a hazard tile, no popup text.
 	var mine := _hidden_mine()
@@ -383,6 +391,12 @@ func _game_over() -> void:
 	check(gv.visible and flow.pause.visible, "the pause panel sits over the hidden board")
 	await _key(KEY_ESCAPE)
 	check(flow.current == gv and not gv.paused and not gv.board.concealed, "Esc again resumes")
+	flow.pause_on_focus_loss = true
+	flow.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(flow.current == flow.pause and gv.clock_paused, "losing focus mid-run pauses it")
+	flow.pause_on_focus_loss = false
+	await _key(KEY_ESCAPE)
+	check(flow.current == gv and not gv.paused, "and Esc resumes")
 	var cam := gv.board.cam
 	# Put the save just short of 25,000 tiles, so this run unlocks Root access.
 	flow.profile.total_tiles = 25000 - _gs().tiles

@@ -15,7 +15,7 @@ var _code := 3
 
 
 func _init() -> void:
-	var args := _parse_args(OS.get_cmdline_user_args())
+	var args := CliArgs.parse(OS.get_cmdline_user_args())
 	match args.get("suite", "unit"):
 		"unit":
 			_code = _run_unit(args)
@@ -33,22 +33,6 @@ func _process(_delta: float) -> bool:
 		printerr("test run aborted (script error?)")
 	quit(_code)
 	return true
-
-
-func _parse_args(raw: PackedStringArray) -> Dictionary:
-	var out := {}
-	var i := 0
-	while i < raw.size():
-		var a := raw[i]
-		if a.begins_with("--"):
-			var key := a.substr(2)
-			if i + 1 < raw.size() and not raw[i + 1].begins_with("--"):
-				out[key] = raw[i + 1]
-				i += 1
-			else:
-				out[key] = "true"
-		i += 1
-	return out
 
 
 ## --only takes one or more substrings separated by "|".

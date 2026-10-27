@@ -6,7 +6,7 @@ extends RefCounted
 const NB := Board.NB
 
 ## ARCADE is the main mode. GHOST has no signal timer; the player ends the run
-## with end_run() and the score is banked (milestone 4 keeps its own records).
+## with end_run() and the score is banked (Profile keeps the records).
 enum Mode { ARCADE, GHOST }
 
 var rules: Rules

@@ -15,7 +15,7 @@ Open `game/project.godot` in Godot 4.7.2 and press **F5**, or run `godot --path 
 | Right click | flag (your opinion only; the game never reads flags) |
 | Drag, WASD or arrow keys | pan |
 | Mouse wheel | zoom (0.5× to 2×) |
-| Esc | pause (Resume, Settings, End run, Main menu); back, on every menu |
+| Esc | pause (Resume, Settings, End run, Main menu); back, on every menu. A run also pauses itself when the game loses focus |
 | Ctrl+E | end a Ghost run |
 | R or Run it back | new run (game over) |
 | Esc or Main menu | back to the title (game over) |
@@ -32,9 +32,9 @@ Settings and progress save to the user data folder as they change, and nothing e
 - macOS: `~/Library/Application Support/CyberSweeper`
 - Linux: `~/.local/share/CyberSweeper`
 
-`settings.json` holds the settings and palette; `profile.json` holds Arcade stats, unlocked palettes, rivals beaten and the top 10 runs per mode. Ghost runs only go on the Ghost leaderboard. Writes go to a temp file first, and a file that won't load is kept as `.bad` while the game starts fresh. Delete the folder to start over. `--save-dir DIR` points the game at another folder; the tests and screenshots always use scratch folders under `test-output/`.
+`settings.json` holds the settings and palette; `profile.json` holds Arcade stats, unlocked palettes, rivals beaten and the top 10 runs per mode. Ghost runs only go on the Ghost leaderboard. Writes go to a temp file first and only replace the real file once the write is complete and checked, so a full disk keeps the old save. A file that won't parse is kept as `.bad` while the game starts fresh, and a wrong-typed value (from hand-editing or an older build) falls back to its default. Delete the folder to start over. `--save-dir DIR` points the game at another folder; the tests and screenshots always use scratch folders under `test-output/`.
 
-Command-line flags go after `--`, for example `godot --path game -- --skip-boot`:
+Command-line flags go after `--`, for example `godot --path game -- --skip-boot`. They're for development: an exported release build ignores all of them except `--reduce-motion` and `--reduce-flashing` (`core/cli_args.gd`), so nobody can seed an Arcade run that counts toward unlocks.
 
 | Flag | Effect |
 | --- | --- |
@@ -49,7 +49,7 @@ Command-line flags go after `--`, for example `godot --path game -- --skip-boot`
 
 Everything in `design/MOTION.md` is in, with the timings from `design/shared/fx.js` (`game/ui/fx/motion.gd`; a test checks they agree):
 - **Boot:** the log, the breach (a 9×5 board solving itself, the session key cracking, hex dumps), ACCESS DENIED setbacks rolled from a per-launch boot seed (clean 40%, one 40%, the 99% agony 15%, double 5%), KEY ACCEPTED, then the JACKED IN card. One boot in 10,000 says JACKED OFF.
-- **Title cards:** JACKED IN, RIVAL DOWN (Arcade only, once per rival), NEW BEST (against this session's best until milestone 4 saves one) and LINK SEVERED. Mid-run cards never take input.
+- **Title cards:** JACKED IN, RIVAL DOWN (Arcade only, once per rival), NEW BEST (against your saved best in that mode) and LINK SEVERED. Mid-run cards never take input.
 - **Sandevistan cascade:** round reveal rings 22 ms apart; cascades of 12+ cells leave three drifting afterimages per cell.
 - **Strain:** one link left, or the signal under 10%, is strain 1; both is strain 2. The red edge beats, HUD labels corrupt, frame ghosts show; at strain 2 the HUD jitters and splits and tear lines cross the screen. The board is never touched. The faint low-signal edge pulse (from 30% shown) stays as the step before strain.
 - **Mine hit:** a hazard tile that slams in and marches, a danger flash, three tear lines, the shake, and the link block shattering. No popup text.

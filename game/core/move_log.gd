@@ -57,10 +57,13 @@ func to_replay() -> Dictionary:
 		"actions": list, "end_ms": end_ms, "score": final_score}
 
 
-## Why a replay can't be played on this build, or "" if it can.
+## Why a replay can't be played on this build, or "" if it can. Check this
+## before play_replay: a replay from a file can be damaged or hand-edited.
 static func replay_problem(r: Dictionary, rules: Rules) -> String:
-	if int(r.get("format", 0)) != 1:
+	if not _num(r.get("format")) or int(r.format) != 1:
 		return "This replay uses a format this build doesn't know."
+	if not _well_formed(r):
+		return "This replay file is damaged."
 	if str(r.get("version", "")) != CsVersion.GAME:
 		return "This replay was recorded on CyberSweeper %s; this is %s, so it might play differently." % [
 			r.get("version", "?"), CsVersion.GAME]
@@ -69,7 +72,33 @@ static func replay_problem(r: Dictionary, rules: Rules) -> String:
 	return ""
 
 
+static func _num(v: Variant) -> bool:
+	return v is int or v is float
+
+
+## Every field play_replay reads is there with the right type: a numeric seed,
+## mode and end time, and actions of [op, x, y, ms] numbers with a known op.
+static func _well_formed(r: Dictionary) -> bool:
+	if not _num(r.get("seed")) or not _num(r.get("mode", 0)) or not _num(r.get("end_ms", -1)):
+		return false
+	if not int(r.get("mode", 0)) in GameState.Mode.values():
+		return false
+	var list: Variant = r.get("actions")
+	if not list is Array:
+		return false
+	for a in list:
+		if not a is Array or a.size() != 4:
+			return false
+		for v in a:
+			if not _num(v):
+				return false
+		if not int(a[0]) in [REVEAL, FLAG, CHORD, END]:
+			return false
+	return true
+
+
 ## Plays a replay's actions at their recorded times into a fresh GameState.
+## The replay must pass replay_problem first.
 ## step_ms > 0 slices the time between actions into ticks of that size (a
 ## real frame rate); the result is the same either way.
 static func play_replay(r: Dictionary, rules: Rules, step_ms := 0) -> GameState:

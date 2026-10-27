@@ -53,19 +53,19 @@ func to_dict() -> Dictionary:
 	return d
 
 
-## Missing or odd values fall back to the defaults.
+## Missing or wrong-typed values fall back to the defaults.
 static func from_dict(d: Dictionary) -> GameSettings:
 	var s := GameSettings.new()
-	s.palette_id = String(d.get("palette", s.palette_id))
-	s.scanlines = bool(d.get("scanlines", s.scanlines))
-	s.reduce_flashing = bool(d.get("reduce_flashing", s.reduce_flashing))
-	s.sfx = bool(d.get("sfx", s.sfx))
-	s.volume = clampf(float(d.get("volume", s.volume)), 0.0, 1.0)
-	s.fullscreen = bool(d.get("fullscreen", s.fullscreen))
-	s.show_fps = bool(d.get("show_fps", s.show_fps))
-	s.mode = "ghost" if d.get("mode", "arcade") == "ghost" else "arcade"
-	if d.has("reduce_motion"):
-		s.reduced_motion = bool(d.reduce_motion)
+	s.palette_id = SaveStore.str_of(d, "palette", s.palette_id)
+	s.scanlines = SaveStore.bool_of(d, "scanlines", s.scanlines)
+	s.reduce_flashing = SaveStore.bool_of(d, "reduce_flashing", s.reduce_flashing)
+	s.sfx = SaveStore.bool_of(d, "sfx", s.sfx)
+	s.volume = clampf(SaveStore.float_of(d, "volume", s.volume), 0.0, 1.0)
+	s.fullscreen = SaveStore.bool_of(d, "fullscreen", s.fullscreen)
+	s.show_fps = SaveStore.bool_of(d, "show_fps", s.show_fps)
+	s.mode = "ghost" if SaveStore.str_of(d, "mode") == "ghost" else "arcade"
+	if d.get("reduce_motion") is bool:
+		s.reduced_motion = d.reduce_motion
 		s.reduced_motion_set = true
 	return s
 

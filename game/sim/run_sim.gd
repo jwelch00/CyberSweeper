@@ -15,7 +15,7 @@ var _code := 3
 
 
 func _init() -> void:
-	var args := _parse_args(OS.get_cmdline_user_args())
+	var args := CliArgs.parse(OS.get_cmdline_user_args())
 	_code = _run(args)
 
 
@@ -73,19 +73,3 @@ func _run(args: Dictionary) -> int:
 		fa.store_string(JSON.stringify({"profile": pid, "bot": profile, "tuning": rules.data,
 			"runs": runs, "elapsed_s": elapsed}))
 	return 0
-
-
-func _parse_args(raw: PackedStringArray) -> Dictionary:
-	var out := {}
-	var i := 0
-	while i < raw.size():
-		var a := raw[i]
-		if a.begins_with("--"):
-			var key := a.substr(2)
-			if i + 1 < raw.size() and not raw[i + 1].begins_with("--"):
-				out[key] = raw[i + 1]
-				i += 1
-			else:
-				out[key] = "true"
-		i += 1
-	return out

@@ -1,5 +1,5 @@
 extends TestCase
-## The data files milestone 4 will read: rivals and palette unlocks.
+## The data files: rivals and palette unlocks.
 
 
 func _json(path: String) -> Dictionary:
