@@ -18,7 +18,9 @@ same every time:
   title.png                           the title
   modes / pause / settings.png        the mode picker, pause (board hidden) and settings
   palettes.png / rivals(-ghost).png   the palette picker and both leaderboards
-  game-over(-unlock/-ghost).png       the run end: rival down, a palette unlock, a banked Ghost run
+  rivals-beaten.png                   the rivals with VESPER and NULL//SAINT beaten (their new bios)
+  game-over(-unlock/-rematch/-ghost)  the run end: rival down, a palette unlock, VESPER's rematch
+                                      line, a banked Ghost run
   mosh-120.png / mosh-260.png         a datamosh transition, breaking out and snapping in
   ui-*.png                            the real screens driven by input events
 """
@@ -75,11 +77,13 @@ def main() -> int:
                           "--jackedoff"] + boot) and ok
         ok = shot(godot, ["--shot", str(OUT / "title.png"), "--screen", "title"]) and ok
         ok = shot(godot, ["--shot", str(OUT / "game-over.png"), "--screen", "over"]) and ok
-        for sample in ("unlock", "ghost"):
+        for sample in ("unlock", "rematch", "ghost"):
             ok = shot(godot, ["--shot", str(OUT / f"game-over-{sample}.png"), "--screen", "over", "--sample", sample]) and ok
         for screen in ("modes", "settings", "palettes", "rivals"):
             ok = shot(godot, ["--shot", str(OUT / f"{screen}.png"), "--screen", screen]) and ok
         ok = shot(godot, ["--shot", str(OUT / "rivals-ghost.png"), "--screen", "rivals", "--tab", "ghost"]) and ok
+        ok = shot(godot, ["--shot", str(OUT / "rivals-beaten.png"), "--screen", "rivals", "--beaten",
+                          "tourist,rookie,streamer,runner,veteran,ace,netrunner"]) and ok
         ok = shot(godot, ["--shot", str(OUT / "pause.png"), "--screen", "pause"] + run) and ok
         for ms in ("120", "260"):
             ok = shot(godot, ["--shot", str(OUT / f"mosh-{ms}.png"), "--screen", "mosh", "--mosh-ms", ms]) and ok

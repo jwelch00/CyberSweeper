@@ -14,6 +14,9 @@ signal chosen(id: String)
 const LEFT := Rect2(120, 95, 1000, 885)
 const RIGHT_X := 1160.0
 const RIGHT_W := 640.0
+## The rival quote on a right-hand card: its width and how many lines fit.
+const QUOTE_W := RIGHT_W - 88.0
+const QUOTE_LINES := 3
 
 var palette: Palette
 var summary := {}
@@ -59,7 +62,7 @@ func _cards() -> Array[String]:
 		out.append("rival")
 	if not report.get("unlocked_now", []).is_empty():
 		out.append("unlock")
-	if out.is_empty() and report.get("flavor", {}).get("kind", "") in ["taunt", "close", "again"]:
+	if out.is_empty() and report.get("flavor", {}).get("kind", "") in ["taunt", "rematch", "close", "again"]:
 		out.append("taunt")
 	return out
 
@@ -300,7 +303,7 @@ func _card(kind: String, r: Rect2) -> void:
 			var rv := Profile.rival(id)
 			Deck.text(self, "ui500", Vector2(x, r.position.y + 46), "Rival down", 16, palette.c("accent2"))
 			Deck.text(self, "ui700", Vector2(x, r.position.y + 90), rv.name, 32, palette.c("ink"))
-			_quote(Vector2(x, r.position.y + 130), rv.beaten, RIGHT_W - 88)
+			_quote(Vector2(x, r.position.y + 130), rv.beaten, QUOTE_W)
 		"unlock":
 			var pid: String = report.unlocked_now.back()
 			var p := Palette.by_id(pid)
@@ -316,24 +319,18 @@ func _card(kind: String, r: Rect2) -> void:
 		"taunt":
 			var f: Dictionary = report.flavor
 			var rv := Profile.rival(f.rival)
-			var head: String = {"close": "So close", "again": "Top of the board"}.get(f.kind, "Next rival")
+			var head: String = {"close": "So close", "rematch": "Rematch", "again": "Top of the board"}.get(f.kind, "Next rival")
 			Deck.text(self, "ui500", Vector2(x, r.position.y + 46), head, 16,
 				palette.c("accent2") if f.kind == "close" else palette.c("inkDim"))
 			var nw := Deck.text(self, "ui700", Vector2(x, r.position.y + 90), rv.name, 32, palette.c("ink"))
 			Deck.text(self, "mono600", Vector2(x + nw + 16, r.position.y + 88), HudText.thousands(int(rv.score)), 20, palette.c("inkDim"))
-			_quote(Vector2(x, r.position.y + 130), f.text, RIGHT_W - 88)
+			_quote(Vector2(x, r.position.y + 130), f.text, QUOTE_W)
 
 
-## A quiet one-line quote in ink-dim (wraps if it must).
+## A quiet quote in ink-dim (wraps if it must; every rival line fits in
+## QUOTE_LINES, tests/unit/test_data.gd).
 func _quote(at: Vector2, s: String, w: float) -> void:
-	var line := ""
 	var y := at.y
-	for word in ("\"" + s + "\"").split(" "):
-		var next := word if line == "" else line + " " + word
-		if Deck.width("ui400", next, 16) > w and line != "":
-			Deck.text(self, "ui400", Vector2(at.x, y), line, 16, palette.c("inkDim"))
-			y += 22
-			line = word
-		else:
-			line = next
-	Deck.text(self, "ui400", Vector2(at.x, y), line, 16, palette.c("inkDim"))
+	for line in Deck.wrap("ui400", "\"" + s + "\"", 16, w):
+		Deck.text(self, "ui400", Vector2(at.x, y), line, 16, palette.c("inkDim"))
+		y += 22

@@ -311,12 +311,11 @@ def write_report(path: Path, result: dict, summary: dict, sensitivity: list[dict
     L.append("")
     L.append("## Rival scores")
     L.append("")
-    L.append("Each rival's score is its bot's median run, rounded to 10, approved in `game/data/rivals.json`. "
-             "NULL//SAINT was recalibrated (975 ms think time) so the expert, a strong human, beats her in "
-             "about one run in five; a decent player never does. lil.byte, dex.hype, OXIDE and VESPER were "
-             "added later to spread the ladder from 850 to 7,000; each bot's think time was tuned so its median "
-             "lands on its score. Small differences between a median here and the approved score are "
-             "run-to-run noise.")
+    L.append("Each rival's score is its bot's median run, nudged off the round number by under 1% so it "
+             "reads like a real run, approved in `game/data/rivals.json`. NULL//SAINT was recalibrated "
+             "(975 ms think time) so the expert, a strong human, beats her in about one run in five; a decent "
+             "player never does. lil.byte, dex.hype, OXIDE and VESPER were added later to spread the ladder "
+             "up to NULL//SAINT; each bot's think time was tuned so its median lands on its score.")
     L.append("")
     L.append("| Rival | Bot | Median this run | Approved score | Reference beats it | Expert beats it |")
     L.append("| --- | --- | --- | --- | --- | --- |")

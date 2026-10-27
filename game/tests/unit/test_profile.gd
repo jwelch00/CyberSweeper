@@ -50,15 +50,17 @@ func test_unlocks_fire_exactly_at_their_thresholds() -> void:
 	var p := Profile.new()
 	check(p.is_unlocked("signal") and p.is_unlocked("plaintext"), "always unlocked")
 	check(not p.is_unlocked("hotwire"), "locked to start")
-	eq(p.record(_run(3590)).unlocked_now, [], "level with mx_halcyon isn't beating her")
-	eq(p.record(_run(3591)).unlocked_now, ["hotwire"], "beating mx_halcyon unlocks Hotwire")
+	var halcyon := int(Profile.rival("runner").score)
+	var saint := int(Profile.rival("netrunner").score)
+	eq(p.record(_run(halcyon)).unlocked_now, [], "level with mx_halcyon isn't beating them")
+	eq(p.record(_run(halcyon + 1)).unlocked_now, ["hotwire"], "beating mx_halcyon unlocks Hotwire")
 	eq(p.record(_run(10, 24000 - 3800 - 200)).unlocked_now, [], "under 25,000 tiles")
 	var tiles_left := 25000 - p.total_tiles
 	eq(p.record(_run(10, tiles_left)).unlocked_now, ["root-access"], "25,000 tiles across runs")
 	eq(p.record(_run(10, 1, 119)).unlocked_now, [], "depth 119")
 	eq(p.record(_run(10, 1, 120)).unlocked_now, ["rustbelt"], "depth 120 in one run")
-	eq(p.record(_run(7000)).unlocked_now, [], "level with NULL//SAINT")
-	eq(p.record(_run(7001)).unlocked_now, ["icebreaker"], "beating NULL//SAINT")
+	eq(p.record(_run(saint)).unlocked_now, [], "level with NULL//SAINT")
+	eq(p.record(_run(saint + 1)).unlocked_now, ["icebreaker"], "beating NULL//SAINT")
 	eq(p.unlocked_count(), 6)
 	eq(p.unseen.size(), 4, "each new unlock is marked New")
 	p.mark_seen("hotwire")
@@ -70,7 +72,7 @@ func test_progress_toward_locked_palettes() -> void:
 	p.record(_run(2293, 7812, 87))
 	eq(p.progress("root-access"), {"have": 7812, "need": 25000, "label": "tiles"})
 	eq(p.progress("rustbelt"), {"have": 87, "need": 120, "label": "best depth"})
-	eq(p.progress("icebreaker"), {"have": 2293, "need": 7000, "label": "best run"})
+	eq(p.progress("icebreaker"), {"have": 2293, "need": int(Profile.rival("netrunner").score), "label": "best run"})
 	eq(p.progress("signal"), {})
 
 
@@ -97,24 +99,44 @@ func test_rivals_beaten_for_the_first_time_only_once() -> void:
 
 func test_flavor_lines_follow_the_rules() -> void:
 	var close := Profile.flavor_for(4200, [], 7)
-	eq([close.kind, close.rival], ["close", "veteran"], "within 10% of OXIDE's 4,600")
+	eq([close.kind, close.rival], ["close", "veteran"], "within 10% of OXIDE's 4,619")
 	check(Profile.rival("veteran").close.has(close.text))
 	var taunt := Profile.flavor_for(3000, [], 7)
 	eq([taunt.kind, taunt.rival], ["taunt", "runner"], "more than 10% short of mx_halcyon")
 	check(Profile.rival("runner").taunts.has(taunt.text))
-	eq(Profile.flavor_for(3590, [], 7).rival, "runner", "level with a rival isn't past them")
+	eq(Profile.flavor_for(int(Profile.rival("runner").score), [], 7).rival, "runner", "level with a rival isn't past them")
 	eq(Profile.flavor_for(3000, [], 11), Profile.flavor_for(3000, [], 11), "the same run always picks the same line")
 	var seen := {}
 	for seed in 64:
 		seen[Profile.flavor_for(3000, [], seed).text] = true
-	eq(seen.size(), 4, "different runs pick all four taunts")
+	eq(seen.size(), Profile.rival("runner").taunts.size(), "different runs pick every taunt")
 
 
-func test_null_saint_bio_changes_once_beaten() -> void:
+func test_rematch_lines_once_a_rival_is_beaten() -> void:
 	var p := Profile.new()
+	var vesper := Profile.rival("ace")
+	eq(Profile.flavor_for(5500, [], 3).kind, "close", "never beaten: VESPER's close line")
+	p.record(_run(6000))
+	var r: Dictionary = p.record(_run(5500)).flavor
+	eq([r.kind, r.rival], ["rematch", "ace"], "beaten before: VESPER's rematch line, even when close")
+	check(vesper.rematch.has(r.text))
+	r = p.record(_run(4000)).flavor
+	eq([r.kind, r.rival], ["taunt", "veteran"], "OXIDE has no rematch lines, so she taunts as usual")
+	eq(p.record(_run(int(Profile.rival("netrunner").score) + 1)).flavor.kind, "beaten")
+	r = p.record(_run(6500)).flavor
+	eq([r.kind, r.rival], ["rematch", "netrunner"], "NULL//SAINT doesn't pretend she hasn't noticed you")
+	check(Profile.rival("netrunner").rematch.has(r.text))
+
+
+func test_bios_change_once_beaten() -> void:
+	var p := Profile.new()
+	var vesper := Profile.rival("ace")
 	var saint := Profile.rival("netrunner")
 	eq(p.bio(saint), saint.bio)
-	p.record(_run(7001))
+	p.record(_run(int(vesper.score) + 1))
+	eq(p.bio(vesper), vesper.bio_after_beaten, "VESPER's changes once she's beaten")
+	eq(p.bio(saint), saint.bio, "NULL//SAINT's waits for her")
+	p.record(_run(int(saint.score) + 1))
 	eq(p.bio(saint), saint.bio_after_beaten)
 	eq(p.bio(Profile.rival("rookie")), Profile.rival("rookie").bio, "the others don't change")
 

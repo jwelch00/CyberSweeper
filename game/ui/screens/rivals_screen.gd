@@ -1,9 +1,17 @@
 class_name RivalsScreen
 extends MenuScreen
-## Rivals and the local leaderboards. Arcade: the three rivals (name, label,
-## score, bio; beaten ones struck through and marked "beaten", NULL//SAINT's
-## bio changing for good once she's beaten) and a ladder of your best runs
-## with the rivals slotted in. Ghost: your best Ghost runs, no rivals.
+## Rivals and the local leaderboards. Arcade: the rivals, lowest score first,
+## two to a row, with NULL//SAINT alone at the bottom in the middle, in danger
+## red (name, label, score, bio; beaten ones struck through and marked
+## "beaten", VESPER's and NULL//SAINT's bios changing for good once beaten),
+## and a ladder of your best runs with the rivals slotted in. Ghost: your best
+## Ghost runs, no rivals.
+
+## A rival's card, and how many lines its bio may wrap to.
+const CARD := Vector2(380, 142)
+const BIO_W := CARD.x - 60.0
+const BIO_LINES := 2
+const CARDS_AT := Vector2(120, 330)
 
 var profile: Profile
 var tab := 0
@@ -63,30 +71,10 @@ func _draw() -> void:
 
 
 func _arcade() -> void:
-	# Left: the rivals, highest first, two columns.
+	# Left: the rivals.
 	var rv := Profile.rivals()
-	var order := rv.duplicate()
-	order.reverse()
-	var cw := 380.0
-	var ch := 142.0
-	for k in order.size():
-		var r: Dictionary = order[k]
-		var col := k / 4
-		var row := k % 4
-		var box := Rect2(120 + col * (cw + 20), 330 + row * (ch + 10), cw, ch)
-		Deck.panel(self, box, 211 + k * 5, palette, 0.8)
-		var beaten := profile.beaten.has(r.id)
-		var nx := box.position.x + 30
-		var name_w := Deck.text(self, "ui700", Vector2(nx, box.position.y + 44), r.name, 24,
-			palette.c("inkDim") if beaten else palette.c("ink"))
-		if beaten:
-			draw_line(Vector2(nx, box.position.y + 36), Vector2(nx + name_w, box.position.y + 36), palette.c("inkDim"), 2.0)
-		Deck.text(self, "mono800", Vector2(box.end.x - 30, box.position.y + 44), HudText.thousands(int(r.score)), 22,
-			palette.c("ink"), true)
-		var lw := Deck.text(self, "ui500", Vector2(nx, box.position.y + 66), r.label, 14, palette.c("inkDim"))
-		if beaten:
-			Deck.tag(self, Vector2(nx + lw + 10, box.position.y + 52), "beaten", palette.c("accent2"), palette.c("void"), 10)
-		_quote(Vector2(nx, box.position.y + 92), profile.bio(r), box.size.x - 60)
+	for k in rv.size():
+		_rival_card(card_rect(k, rv.size()), rv[k], k == rv.size() - 1, k)
 	# Right: the ladder.
 	var lad := Rect2(940, 330, size.x - 940 - 120, 598)
 	Deck.panel(self, lad, 233, palette, 0.8)
@@ -105,6 +93,35 @@ func _arcade() -> void:
 		ry += 49
 	if profile.arcade.is_empty():
 		Deck.text(self, "ui400", Vector2(lad.position.x + 40, ry + 30), "No Arcade runs yet. Jack in.", 18, palette.c("inkDim"))
+
+
+## Card k of n: lowest first, two to a row; the last (NULL//SAINT) alone
+## on the bottom row, centered under the two columns.
+static func card_rect(k: int, n: int) -> Rect2:
+	var gap := Vector2(20, 10)
+	if k == n - 1:
+		return Rect2(CARDS_AT + Vector2((CARD.x + gap.x) * 0.5, n / 2 * (CARD.y + gap.y)), CARD)
+	return Rect2(CARDS_AT + Vector2(k % 2 * (CARD.x + gap.x), k / 2 * (CARD.y + gap.y)), CARD)
+
+
+func _rival_card(box: Rect2, r: Dictionary, top: bool, k: int) -> void:
+	var role := "danger" if top else "accent"
+	Deck.panel(self, box, 211 + k * 5, palette, 0.8, role, 0.1 if top else 0.0)
+	var beaten := profile.beaten.has(r.id)
+	var nx := box.position.x + 30
+	var ink := palette.c("danger") if top else palette.c("ink")
+	var dim := ink.lerp(palette.c("inkDim"), 0.5) if top else palette.c("inkDim")
+	var name_c := dim if beaten else ink
+	var name_w := Deck.text(self, "ui700", Vector2(nx, box.position.y + 44), r.name, 24, name_c)
+	if beaten:
+		draw_line(Vector2(nx, box.position.y + 36), Vector2(nx + name_w, box.position.y + 36), name_c, 2.0)
+	Deck.text(self, "mono800", Vector2(box.end.x - 30, box.position.y + 44), HudText.thousands(int(r.score)), 22, ink, true)
+	var tx := nx + Deck.text(self, "ui500", Vector2(nx, box.position.y + 66), r.label, 14, palette.c("inkDim")) + 10
+	if top:
+		tx += Deck.tag(self, Vector2(tx, box.position.y + 52), "top rival", palette.c("danger"), palette.c("void"), 10) + 6
+	if beaten:
+		Deck.tag(self, Vector2(tx, box.position.y + 52), "beaten", palette.c("accent2"), palette.c("void"), 10)
+	_quote(Vector2(nx, box.position.y + 92), profile.bio(r), BIO_W)
 
 
 func _ghost() -> void:
@@ -150,15 +167,7 @@ func _row(r: Rect2, rank: int, row: Dictionary) -> void:
 
 
 func _quote(at: Vector2, s: String, w: float) -> void:
-	var line := ""
 	var y := at.y
-	var f := Deck.font("ui400")
-	for word in ("\"" + s + "\"").split(" "):
-		var next := word if line == "" else line + " " + word
-		if Deck.width("ui400", next, 15) > w and line != "":
-			draw_string(f, Vector2(at.x, y), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, palette.c("inkDim"))
-			y += 20
-			line = word
-		else:
-			line = next
-	draw_string(f, Vector2(at.x, y), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, palette.c("inkDim"))
+	for line in Deck.wrap("ui400", "\"" + s + "\"", 15, w):
+		Deck.text(self, "ui400", Vector2(at.x, y), line, 15, palette.c("inkDim"))
+		y += 20

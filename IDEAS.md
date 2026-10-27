@@ -71,6 +71,30 @@ On game over, a "Copy share card" button renders an image and copies it to the s
 
 Decide between 1 and 2 before building. Either way, keep 3 as the fallback.
 
+## Lore encyclopedia
+
+Some nodes on the board are specially highlighted. Decrypting one unlocks a lore drop in a new encyclopedia section of the menu. Entries can also unlock by beating rivals and by reaching milestones such as total score or depth.
+
+- **Where the lore starts:** the rival lines already drop hints (`game/data/rivals.json`): Tetsukage and its secure lattice, OXIDE writing half its ICE, the nine seconds the lattice went dark, VESPER's old run with NULL//SAINT and the run VESPER keeps pinned. Entries can fill these threads in, while the lines stay hints.
+- **Unlock sources:**
+  - **Highlighted nodes** (data shards) on the board;
+  - **Rivals:** beating each one unlocks their entry. `Profile.beaten` already records this;
+  - **Milestones:** best depth and total tiles are already tracked (palette unlocks use them); total score and runs played would be new stats. `unlocks.json`'s rule types (`beat_rival`, `total_tiles`, `depth`) could be reused for entries.
+- **Encyclopedia screen:** categories such as the rivals, Tetsukage and the lattice. Locked entries show encrypted text, like a locked palette's preview, and new ones get the "New" tag.
+
+### Notes for whoever builds it
+
+- **A highlight must say nothing about mines.** If highlights only went on safe cells, each one would be a free, guaranteed-safe click: a pickup, which the core rule forbids. Place them from a hash of the seed and the cell, independent of the mine layout, so some sit on mines.
+  - A highlighted safe cell decrypts when it's revealed.
+  - A highlighted mine decrypts once the revealed numbers prove it's a mine. The solver can already tell. Flags never count, so a wrong flag can't unlock anything.
+
+  Either way the reward is for reading the board, never for guessing.
+- **Feel, never rules:** no score bonus, no signal refill beyond a normal decrypt, no effect on the links. Rival scores and their calibration stay untouched.
+- **Rarity and determinism:** a few per run at most (one per so many chunks), the same cells for the same seed. Which entry a shard gives could be the next locked one, so shards never repeat.
+- **To decide:** whether Ghost runs can find shards. Ghost counts toward no unlocks today (SPEC.md).
+- **Save data:** a `lore` list of unlocked ids and an `unseen` list for the "New" tag, the same pattern as palettes in `Profile`.
+- **Content:** a `lore.json` with each entry's id, category, title, text and unlock rule, tested like `rivals.json`: every entry reachable, the text fits its screen.
+
 ## More ideas
 
 ### Gameplay
@@ -81,8 +105,7 @@ Decide between 1 and 2 before building. Either way, keep 3 as the fallback.
   - Blackout: numbers fade 5 s after they're revealed.
 - **Sectors:** as depth increases, the board passes through named sectors ("Sector 7 // Cold storage"), with subtle visual shifts like a tint or a different cipher glyph style, so an infinite board still feels like a journey.
 - **Landmarks:** rare authored structures inside the procedural board, such as a wide zero "data lake" or a dense "firewall" band, still validated by the no-50/50 solver.
-- **Data shards:** very rare tiles that drop a line of lore when decrypted: rival backstory, what the grid is, who NULL//SAINT really is. They're collectible, with a lore log in the menu.
-- **Rival rematches:** after you beat a rival, they come back later with a higher score and a new taunt, so the chase never fully ends.
+- **Rival rematches:** after you beat a rival, they come back later with a higher score and a new taunt, so the chase never fully ends. (VESPER and NULL//SAINT already have rematch *lines* for after you've beaten them; their scores don't change.)
 
 ### Learning tools (the solver already exists, so these are cheap)
 - **Hint button in Ghost mode:** highlights one provably safe cell.

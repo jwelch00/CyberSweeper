@@ -65,14 +65,14 @@ The Rookie target changed from the plan's reference p25-p40 to p5-p15: the spec 
 | netrunner median 2-3x reference median | 2.36x | yes |
 | pace: rookie < runner < netrunner (tiles/min) | 224 < 281 < 331 | yes |
 | rival medians climb, lil.byte to NULL//SAINT | 841 < 1,894 < 2,700 < 3,598 < 4,580 < 5,770 < 6,996 | yes |
-| lil.byte median within 2% of 850 | 841 | yes |
-| script.kitty median within 2% of 1,890 | 1,894 | yes |
-| dex.hype median within 2% of 2,700 | 2,700 | yes |
-| mx_halcyon median within 2% of 3,590 | 3,598 | yes |
-| OXIDE median within 2% of 4,600 | 4,580 | yes |
-| VESPER median within 2% of 5,800 | 5,770 | yes |
-| NULL//SAINT median within 2% of 7,000 | 6,996 | yes |
-| expert beats NULL//SAINT's 7,000 in about 20% of runs | 19.0% | yes |
+| lil.byte median within 2% of 847 | 841 | yes |
+| script.kitty median within 2% of 1,893 | 1,894 | yes |
+| dex.hype median within 2% of 2,716 | 2,700 | yes |
+| mx_halcyon median within 2% of 3,582 | 3,598 | yes |
+| OXIDE median within 2% of 4,619 | 4,580 | yes |
+| VESPER median within 2% of 5,764 | 5,770 | yes |
+| NULL//SAINT median within 2% of 7,013 | 6,996 | yes |
+| expert beats NULL//SAINT's 7,013 in about 20% of runs | 18.3% | yes |
 | every run ends within 45 min | longest 19.9 min | yes |
 
 ### Score distributions
@@ -236,17 +236,17 @@ Each row changes one setting from the final values; reference profile medians.
 
 ## Rival scores
 
-Each rival's score is its bot's median run, rounded to 10, approved in `game/data/rivals.json`. NULL//SAINT was recalibrated (975 ms think time) so the expert, a strong human, beats her in about one run in five; a decent player never does. lil.byte, dex.hype, OXIDE and VESPER were added later to spread the ladder from 850 to 7,000; each bot's think time was tuned so its median lands on its score. Small differences between a median here and the approved score are run-to-run noise.
+Each rival's score is its bot's median run, nudged off the round number by under 1% so it reads like a real run, approved in `game/data/rivals.json`. NULL//SAINT was recalibrated (975 ms think time) so the expert, a strong human, beats her in about one run in five; a decent player never does. lil.byte, dex.hype, OXIDE and VESPER were added later to spread the ladder up to NULL//SAINT; each bot's think time was tuned so its median lands on its score.
 
 | Rival | Bot | Median this run | Approved score | Reference beats it | Expert beats it |
 | --- | --- | --- | --- | --- | --- |
-| lil.byte | TOURIST | 841 | **850** | 100% of runs | 100% of runs |
-| script.kitty | ROOKIE | 1,894 | **1,890** | 94% of runs | 100% of runs |
-| dex.hype | STREAMER | 2,700 | **2,700** | 66% of runs | 100% of runs |
-| mx_halcyon | RUNNER | 3,598 | **3,590** | 14% of runs | 99% of runs |
-| OXIDE | VETERAN | 4,580 | **4,600** | 0% of runs | 93% of runs |
-| VESPER | ACE | 5,770 | **5,800** | 0% of runs | 68% of runs |
-| NULL//SAINT | NETRUNNER | 6,996 | **7,000** | 0% of runs | 19% of runs |
+| lil.byte | TOURIST | 841 | **847** | 100% of runs | 100% of runs |
+| script.kitty | ROOKIE | 1,894 | **1,893** | 94% of runs | 100% of runs |
+| dex.hype | STREAMER | 2,700 | **2,716** | 64% of runs | 100% of runs |
+| mx_halcyon | RUNNER | 3,598 | **3,582** | 14% of runs | 99% of runs |
+| OXIDE | VETERAN | 4,580 | **4,619** | 0% of runs | 92% of runs |
+| VESPER | ACE | 5,770 | **5,764** | 0% of runs | 68% of runs |
+| NULL//SAINT | NETRUNNER | 6,996 | **7,013** | 0% of runs | 18% of runs |
 
 ## Unlock thresholds
 

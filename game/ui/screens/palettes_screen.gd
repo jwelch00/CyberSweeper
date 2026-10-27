@@ -220,17 +220,7 @@ func _hatch(r: Rect2, col: Color) -> void:
 
 ## Word-wrapped text in a column, at most max_lines (the last one ends in …).
 func _wrap(s: String, at: Vector2, w: float, size: int, col: Color, f := "ui400", max_lines := 99) -> void:
-	var lines: Array[String] = []
-	var line := ""
-	for word in s.split(" "):
-		var next := word if line == "" else line + " " + word
-		if Deck.width(f, next, size) > w and line != "":
-			lines.append(line)
-			line = word
-		else:
-			line = next
-	if line != "":
-		lines.append(line)
+	var lines := Deck.wrap(f, s, size, w)
 	if lines.size() > max_lines:
 		lines = lines.slice(0, max_lines)
 		var last := lines[max_lines - 1]

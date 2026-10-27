@@ -65,8 +65,8 @@ static func _closed(pts: PackedVector2Array, off: Vector2) -> PackedVector2Array
 
 ## The line work for a jag shape, on any CanvasItem (the game-over screen
 ## draws its panels with this too).
-static func draw_frame(ci: CanvasItem, sh: Dictionary, sz: Vector2, pal: Palette, ghost_alpha: float) -> void:
-	var acc := pal.c("accent")
+static func draw_frame(ci: CanvasItem, sh: Dictionary, sz: Vector2, pal: Palette, ghost_alpha: float, role := "accent") -> void:
+	var acc := pal.c(role)
 	var half := Vector2(0.5, 0.5)
 	if ghost_alpha > 0.0:
 		var g := pal.c("accent2")

@@ -218,7 +218,7 @@ Nine headless bots (one per rival, plus two tuning stand-ins) play the real game
 | VESPER | full solver, chords | quick, rare errors | Ace rival |
 | NULL//SAINT | full solver, chords | never faster than 0.5 s a move, rare errors | Netrunner rival |
 | reference | like Runner but slower and sloppier | | stands in for a decent human; sets the run-length target |
-| expert | full solver, quicker than reference, fewer misclicks | | stands in for a strong human; sets how beatable NULL//SAINT is (19% of its runs beat 7,000) |
+| expert | full solver, quicker than reference, fewer misclicks | | stands in for a strong human; sets how beatable NULL//SAINT is (18% of its runs beat 7,013) |
 
 Run them:
 
@@ -233,17 +233,17 @@ python tools/simulate.py --games 300 --sensitivity --report docs/tuning-report.m
 - Every profile plays the same seeded boards, and a run is reproducible from its seed.
 - The last command regenerates the report.
 
-**Current rival scores** (each bot's median run, rounded to 10; details in `docs/tuning-report.md`). The ladder runs from lil.byte, whom anyone can beat, up to NULL//SAINT, the final boss: a decent player never beats her, and a strong one does about one run in five. Each rival also has a bio, taunts, "close" lines and a beaten line (`game/data/rivals.json`); the game over picks one.
+**Current rival scores** (each bot's median run, nudged off the round number by under 1% so it reads like a real run; details in `docs/tuning-report.md`). The ladder runs from lil.byte, whom anyone can beat, up to NULL//SAINT, the final boss: a decent player never beats her, and a strong one does about one run in five. Each rival also has a bio, taunts, "close" lines and a beaten line, and VESPER and NULL//SAINT have rematch lines and a new bio for after you've beaten them (`game/data/rivals.json`). The game over picks one line (rules in `SPEC.md`, Rival flavor text).
 
 | Rival | Label | Score |
 | --- | --- | --- |
-| lil.byte | tourist | 850 |
-| script.kitty | rookie | 1,890 |
-| dex.hype | streamer | 2,700 |
-| mx_halcyon | runner | 3,590 |
-| OXIDE | veteran | 4,600 |
-| VESPER | ace | 5,800 |
-| NULL//SAINT | netrunner | 7,000 |
+| lil.byte | tourist | 847 |
+| script.kitty | rookie | 1,893 |
+| dex.hype | streamer | 2,716 |
+| mx_halcyon | runner | 3,582 |
+| OXIDE | veteran | 4,619 |
+| VESPER | ace | 5,764 |
+| NULL//SAINT | netrunner | 7,013 |
 
 A reference ("decent human") run lasts a median 9.5 minutes, 6.6–11.3 for most runs, and scores a median 2,960.
 

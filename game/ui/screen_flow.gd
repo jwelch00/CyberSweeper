@@ -319,7 +319,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 ## Renders one screen and quits (tools/shots.py). --screen game (default, see
 ## GameView.screenshot), boot (--bootseed, --breach, --at-ms or --at denial |
 ## accept | card, --card-ms, --jackedoff), title, modes, pause, settings,
-## palettes, rivals (--tab ghost), over (--sample rival | unlock | ghost), or
+## palettes, rivals (--tab ghost, --beaten id,id), over (--sample rival | unlock
+## | rematch | ghost), or
 ## mosh (--mosh-ms into a title -> game over datamosh). Menus show a sample
 ## profile; main.gd points saves at a scratch folder in this mode.
 func screenshot(args: Dictionary) -> void:
@@ -370,6 +371,8 @@ func screenshot(args: Dictionary) -> void:
 			_show(palettes)
 		"rivals":
 			rivals.tab = 1 if args.get("tab", "") == "ghost" else 0
+			if args.has("beaten"):
+				profile.beaten.assign(String(args.beaten).split(","))
 			_show(rivals)
 		"over":
 			_show_sample_over(args)
@@ -415,7 +418,8 @@ func _sample_profile() -> void:
 
 
 ## The game over from design/png/game-over-signal.png (--sample rival), one
-## that also unlocks a palette (unlock), or a banked Ghost run (ghost).
+## that also unlocks a palette (unlock), a run just under VESPER after beating
+## her once (rematch), or a banked Ghost run (ghost).
 func _show_sample_over(args: Dictionary) -> void:
 	var kind: String = args.get("sample", "rival")
 	var tally := [0, 617, 395, 173, 60, 18, 5, 1, 0]
@@ -430,6 +434,11 @@ func _show_sample_over(args: Dictionary) -> void:
 	if kind == "unlock":
 		s.score = 3712
 		s.tally = [0, 912, 610, 280, 101, 24, 5, 1, 0]
+	elif kind == "rematch":
+		p.record({"score": 5911, "tiles": 4700, "depth": 330, "elapsed_ms": 1500000, "seed": 3, "cause": "signal",
+			"date": "2026-10-25"})
+		s.score = 5512
+		s.tally = [0, 1290, 905, 412, 160, 38, 9, 2, 0]
 	elif kind == "ghost":
 		s.mode = GameState.Mode.GHOST
 		s.ended = true

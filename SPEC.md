@@ -88,10 +88,11 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
   - RUNNER (`mx_halcyon`): adds subset rules, medium speed, low error rate.
   - NETRUNNER (`NULL//SAINT`): full solver, fast, rare errors.
 - Four more fill in the ladder from 0 to NULL//SAINT's score (added after milestone 4, 2026-10-27), each bot tuned so its median lands on its score:
-  - TOURIST (`lil.byte`, 850): single-cell rules, very slow, error-prone; anyone can beat it.
-  - STREAMER (`dex.hype`, about 2,700): subset rules and chords, sloppier than the Runner.
-  - VETERAN (`OXIDE`, about 4,600): full solver, deliberate.
-  - ACE (`VESPER`, about 5,800): full solver, quick, just under NULL//SAINT.
+  - TOURIST (`lil.byte`, 847): single-cell rules, very slow, error-prone; anyone can beat it.
+  - STREAMER (`dex.hype`, 2,716): subset rules and chords, sloppier than the Runner.
+  - VETERAN (`OXIDE`, 4,619): full solver, deliberate.
+  - ACE (`VESPER`, 5,764): full solver, quick, just under NULL//SAINT.
+- Rival scores are nudged off round numbers by under 1% of the bot's median so they read like real runs (2026-10-27): 847, 1,893, 2,716, 3,582, 4,619, 5,764 and 7,013.
 - Run each bot across 100+ seeded games and report score distributions (median, p90, max). Use the results to tune signal drain/refill and density so a decent human's run lasts roughly 5–15 minutes.
 - Rivals must be challenging but beatable. Each rival's score is that bot's **median** run, not its best. NETRUNNER thinks at a human pace (no faster than ~0.5s per move) so it wins on logic, not reflexes.
 - Target feel: script.kitty falls within your first few runs, mx_halcyon takes some practice, and NULL//SAINT is a real stretch goal that a strong player can beat within a few hours of play. Report the numbers and propose the three rival scores for my approval before locking them in.
@@ -120,10 +121,11 @@ Title, gameplay, pause, settings, game over, palettes, rivals. Mockups exist for
 - Build milestone 3 with modes in mind so they aren't bolted on later.
 
 ## Rival flavor text (milestone 4)
-Each rival in `game/data/rivals.json` has a `bio`, 4 `taunts`, 2 `close` lines and a `beaten` line. NULL//SAINT also has a `bio_after_beaten` and 3 `again` lines.
-- **Rivals screen:** each rival's bio sits under their name and score. NULL//SAINT switches to `bio_after_beaten` permanently once the player has beaten her.
+Each rival in `game/data/rivals.json` has a `bio`, at least 4 `taunts`, at least 2 `close` lines and a `beaten` line. VESPER and NULL//SAINT also have a `bio_after_beaten` and `rematch` lines, and NULL//SAINT has `again` lines. VESPER has the most to say. Every bio and line fits its card (a unit test checks this with the real font).
+- **Rivals screen:** the rivals in order of score, lowest first, two to a row, with NULL//SAINT alone on the bottom row in the middle, in the palette's danger red. Each rival's bio sits under their name and score. A rival with a `bio_after_beaten` switches to it permanently once the player has beaten them. The ladder beside the cards stays highest first.
 - **Game over, if the run beat a rival for the first time:** show that rival's `beaten` line (the best one's, if several), alongside the unlock card when there is one.
-- **Game over, otherwise:** within 10% of the next rival above the player's score, one of their `close` lines; otherwise one of their `taunts`; above every rival, one of NULL//SAINT's `again` lines. The pick is seeded by the run, so a run always shows the same line.
+- **Game over, otherwise,** from the next rival above the player's score: one of their `rematch` lines if the player has beaten them before and they have any (headed "Rematch"); otherwise, within 10% of them, one of their `close` lines; otherwise one of their `taunts`. Above every rival, one of NULL//SAINT's `again` lines. The pick is seeded by the run, so a run always shows the same line.
+- **Lore:** some lines carry small lore drops: Tetsukage and its secure lattice, OXIDE writing its ICE, the nine seconds the lattice went dark, VESPER's old run with NULL//SAINT. Keep them hints, never exposition; `IDEAS.md` has the lore encyclopedia that would expand them.
 - **Style:** a quiet one-line quote in ink-dim, not a big banner.
 - **Arcade only:** Ghost runs never beat rivals, so they never trigger these lines.
 

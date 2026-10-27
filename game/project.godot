@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="CyberSweeper"
-config/version="0.5.1"
+config/version="0.5.2"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="CyberSweeper"
 run/main_scene="res://ui/main.tscn"

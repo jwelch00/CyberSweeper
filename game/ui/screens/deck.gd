@@ -29,16 +29,33 @@ static func text(ci: CanvasItem, f: String, pos: Vector2, s: String, size: int, 
 	return w
 
 
-## A jagged panel: void fill and the HUD's line work.
-static func panel(ci: CanvasItem, r: Rect2, seed: int, pal: Palette, fill := 0.86) -> void:
+## A jagged panel: void fill and the HUD's line work, in the accent or
+## another role (NULL//SAINT's card is danger), with the fill tinted toward it.
+static func panel(ci: CanvasItem, r: Rect2, seed: int, pal: Palette, fill := 0.86, role := "accent", tint := 0.0) -> void:
 	var sh := Jag.points(roundf(r.size.x), roundf(r.size.y), seed)
 	var pts := PackedVector2Array()
 	for p in sh.pts:
 		pts.append(p + r.position)
-	ci.draw_colored_polygon(pts, Color(pal.c("void"), fill))
+	ci.draw_colored_polygon(pts, Color(pal.c("void").lerp(pal.c(role), tint), fill))
 	ci.draw_set_transform(r.position)
-	JagPanel.draw_frame(ci, sh, r.size, pal, 0.0)
+	JagPanel.draw_frame(ci, sh, r.size, pal, 0.0, role)
 	ci.draw_set_transform(Vector2.ZERO)
+
+
+## Word-wraps s into lines no wider than w.
+static func wrap(f: String, s: String, size: int, w: float) -> Array[String]:
+	var lines: Array[String] = []
+	var line := ""
+	for word in s.split(" "):
+		var next := word if line == "" else line + " " + word
+		if width(f, next, size) > w and line != "":
+			lines.append(line)
+			line = word
+		else:
+			line = next
+	if line != "":
+		lines.append(line)
+	return lines
 
 
 ## A filled tag with the lower-right corner cut (cs.css .tagl). Returns its width.
